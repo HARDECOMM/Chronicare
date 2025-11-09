@@ -18,7 +18,7 @@ app.use(express.json());
 
 // use core middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite default
+  origin: 'http://localhost:5174', // Vite default
   credentials: true
 }));
 
