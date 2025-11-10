@@ -1,6 +1,6 @@
 // const mongoose = require('mongoose');
 // const dotenv = require('dotenv');
-// const Doctor = require('./models/Doctor');
+// const { Doctor } = require('./models/doctor');
 
 // dotenv.config();
 // mongoose.connect(process.env.MONGO_URI);

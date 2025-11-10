@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const doctorRoutes = require('../routes/doctorRoutes')
+const appointmentRoutes = require('../routes/appointmentRoutes');
+
 dotenv.config();
 
 // Load environment variables from .env file
@@ -33,6 +35,7 @@ app.get('/', (req, res) => {
 // ✅ Mount authentication routes under /api/auth
 // Example: POST /api/auth/register
 app.use('/api/doctors', doctorRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 // ✅ Connect to MongoDB and start the server
 mongoose.connect(process.env.MONGO_URI)
