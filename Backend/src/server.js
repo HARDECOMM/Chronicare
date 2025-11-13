@@ -1,39 +1,49 @@
-// Import core packages
+// ✅ Import core packages
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const doctorRoutes = require('../routes/doctorRoutes')
+
+// ✅ Load environment variables from .env file
+dotenv.config();
+
+// ✅ Log Clerk keys to verify they're loaded (remove after testing)
+console.log('CLERK_PUBLISHABLE_KEY:', process.env.CLERK_PUBLISHABLE_KEY);
+console.log('CLERK_SECRET_KEY:', process.env.CLERK_SECRET_KEY);
+
+// ✅ Import Clerk middleware for backend authentication
+const { clerkMiddleware } = require('@clerk/express');
+
+// ✅ Import route modules
+const userRoutes = require('../routes/userRoutes');
+const doctorRoutes = require('../routes/doctorRoutes');
 const appointmentRoutes = require('../routes/appointmentRoutes');
 
-dotenv.config();
-
-// Load environment variables from .env file
-dotenv.config();
-
-// Initialize Express app
+// ✅ Initialize Express app
 const app = express();
 
-// ✅ Middleware to parse incoming JSON requests
-// This is CRITICAL for reading req.body in POST/PUT requests
+// ✅ Parse incoming JSON requests
 app.use(express.json());
 
-// use core middleware
+// ✅ Enable CORS for frontend access
 app.use(cors({
-  origin: 'http://localhost:5174', // Vite default
+  origin: 'http://localhost:5173', // Vite default dev server
   credentials: true
 }));
 
-// Define the port to run the server on
+// ✅ Inject Clerk authentication into every request
+app.use(clerkMiddleware());
+
+// ✅ Define the port to run the server on
 const PORT = process.env.PORT || 5000;
 
 // ✅ Root route for testing the server
 app.get('/', (req, res) => {
-  res.send('🚀 Root Server running.............');
+  res.send('🚀 Root Server running...');
 });
 
-// ✅ Mount authentication routes under /api/auth
-// Example: POST /api/auth/register
+// ✅ Mount API routes
+app.use('/api/users', userRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 

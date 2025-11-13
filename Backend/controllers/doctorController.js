@@ -19,6 +19,6 @@ exports.getDoctorById = async (req, res) => {
     res.status(200).json(doctor);
   } catch (err) {
     console.error('Error fetching doctor by ID:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to fetch doctor' });
   }
 };

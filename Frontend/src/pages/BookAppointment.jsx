@@ -1,103 +1,174 @@
-// src/pages/BookAppointment.jsx
-
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { fetchDoctorById, createAppointment } from '../Apis/createAppointmnet';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
+import { AppointmentsAPI } from '../api/AppointmentsAPI';
+import { AppointmentCard } from '../components/UI/AppointmentCard';
+import { toast } from 'react-hot-toast';
 
 export function BookAppointment() {
-  const { doctorId } = useParams(); // Get doctorId from the route URL
-  const navigate = useNavigate(); // For redirecting after booking
+  const { doctorId } = useParams();
+  const navigate = useNavigate();
+  const { getToken } = useAuth();
 
-  // Local state for form inputs and feedback
-  const [doctor, setDoctor] = useState(null); // Doctor data
-  const [date, setDate] = useState(''); // Appointment date/time
-  const [type, setType] = useState('virtual'); // Appointment type
-  const [notes, setNotes] = useState(''); // Optional notes
-  const [error, setError] = useState(''); // Error message
+  const [doctor, setDoctor] = useState(null);
+  const [date, setDate] = useState('');
+  const [type, setType] = useState('');
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Load doctor details when component mounts or doctorId changes
+  const [appointments, setAppointments] = useState([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
+
   useEffect(() => {
-    async function loadDoctor() {
+    async function fetchDoctor() {
       try {
-        const doctorData = await fetchDoctorById(doctorId);
-        setDoctor(doctorData); // Set doctor info
-      } catch {
-        setError('Doctor not found'); // Show error if fetch fails
+        const token = await getToken();
+        const doctor = await AppointmentsAPI.getDoctor(doctorId, token);
+        setDoctor(doctor);
+      } catch (err) {
+        console.error('❌ Failed to load doctor:', err);
+        toast.error('Doctor not found');
       }
     }
-    loadDoctor();
-  }, [doctorId]);
+    fetchDoctor();
+  }, [doctorId, getToken]);
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent page reload
+  useEffect(() => {
+    loadAppointments();
+  }, [getToken]);
+
+  async function loadAppointments() {
     try {
-      await createAppointment({
-        doctorId,
-        date,
-        type,
-        notes,
-        userId: 'demo-user-id', // 🔐 Replace with Clerk user ID when auth is added
-      });
-      navigate('/appointments'); // Redirect to appointments page after success
-    } catch {
-      setError('Failed to book appointment'); // Show error if booking fails
+      const token = await getToken();
+      const data = await AppointmentsAPI.listMine(token);
+      setAppointments(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('❌ Failed to load appointments:', err);
+      setAppointments([]);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const token = await getToken();
+      const response = await AppointmentsAPI.create(
+        { doctorId, date, type, notes },
+        token
+      );
+
+      if (response && response._id) {
+        toast.success('Appointment booked successfully');
+        await loadAppointments();
+        setTimeout(() => navigate('/appointments'), 1000);
+      } else {
+        toast.error('Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      console.error('❌ Booking failed:', err.response?.data || err.message);
+      toast.error('Failed to book appointment');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Show loading state while doctor data is being fetched
-  if (!doctor) return <p className="text-center mt-10">Loading doctor info...</p>;
+  const handleStatusUpdate = async (id, status) => {
+    setUpdatingId(id);
+    try {
+      const token = await getToken();
+      const updated = await AppointmentsAPI.updateStatus(id, status, token);
+      toast.success(`Appointment ${status}`);
+      setAppointments((prev) =>
+        prev.map((appt) => (appt._id === id ? updated : appt))
+      );
+    } catch (err) {
+      console.error(`❌ Failed to ${status} appointment:`, err.message);
+      toast.error(`Failed to ${status} appointment`);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this appointment?')) return;
+    try {
+      const token = await getToken();
+      await AppointmentsAPI.remove(id, token);
+      toast.success('Appointment deleted');
+      setAppointments((prev) => prev.filter((appt) => appt._id !== id));
+    } catch (err) {
+      console.error('❌ Delete failed:', err.message);
+      toast.error('Failed to delete appointment');
+    }
+  };
 
   return (
-    <div className="max-w-md mx-auto mt-10 px-6 py-8 bg-white rounded-lg shadow-md">
+    <div className="max-w-3xl mx-auto mt-10 px-4">
       <h2 className="text-xl font-bold mb-4">
-        Book Appointment with {doctor.name}
+        Book Appointment with {doctor?.name || 'Doctor'}
       </h2>
 
-      {/* Show error message if any */}
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4 mb-8">
+        <input
+          type="datetime-local"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+          className="w-full border px-3 py-2 rounded"
+        />
 
-      {/* Appointment form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label>Date & Time</label>
-          <input
-            type="datetime-local"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full border px-4 py-2 rounded"
-            required
-          />
-        </div>
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          required
+          className="w-full border px-3 py-2 rounded"
+        >
+          <option value="">Select appointment type</option>
+          <option value="virtual">virtual</option>
+          <option value="in-person">in person</option>
+          <option value="home visit">home visit</option>
+        </select>
 
-        <div>
-          <label>Type</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="w-full border px-4 py-2 rounded"
-          >
-            <option value="virtual">Virtual</option>
-            <option value="in-person">In-Person</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Notes (optional)</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full border px-4 py-2 rounded"
-          />
-        </div>
+        <textarea
+          placeholder="Notes (optional)"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+        />
 
         <button
           type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+          disabled={loading}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >
-          Confirm Appointment
+          {loading ? 'Booking...' : 'Confirm Appointment'}
         </button>
       </form>
+
+      <h3 className="text-lg font-semibold mb-2">Your Existing Appointments</h3>
+      {loadingAppointments ? (
+        <p>Loading appointments...</p>
+      ) : appointments.length === 0 ? (
+        <p>No appointments yet.</p>
+      ) : (
+        <ul className="space-y-4">
+          {appointments.map((appt) => (
+            <AppointmentCard
+              key={appt._id}
+              appt={appt}
+              updatingId={updatingId}
+              onConfirm={(id) => handleStatusUpdate(id, 'confirmed')}
+              onCancel={(id) => handleStatusUpdate(id, 'cancelled')}
+              onDelete={handleDelete}
+            />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
