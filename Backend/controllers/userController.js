@@ -1,3 +1,5 @@
+// controllers/userController.js
+const mongoose = require('mongoose');
 const { User } = require('../models/user');
 
 // ✅ Sync Clerk user to database
@@ -14,18 +16,18 @@ exports.syncUser = async (req, res) => {
     let user = await User.findOne({ clerkId });
 
     if (!user) {
-      // ✅ First-time login: create user with no role yet
+      // First-time login: create user with no role yet
       user = await User.create({
         clerkId,
         name,
         email: normalizedEmail,
-        role: null, // role will be set later via /set-role
+        role: null,
       });
     }
 
     res.status(200).json(user);
   } catch (err) {
-    console.error('❌ User sync error:', err.message);
+    console.error('❌ User sync error:', err);
     res.status(500).json({ error: 'Server error during user sync' });
   }
 };
@@ -46,7 +48,7 @@ exports.getUserRole = async (req, res) => {
 
     res.status(200).json({ role: user.role });
   } catch (err) {
-    console.error('❌ Role fetch error:', err.message);
+    console.error('❌ Role fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch role' });
   }
 };
@@ -60,10 +62,11 @@ exports.setUserRole = async (req, res) => {
   }
 
   try {
-    await User.findOneAndUpdate({ clerkId }, { role });
-    res.status(200).json({ success: true });
+    const updated = await User.findOneAndUpdate({ clerkId }, { role }, { new: true });
+    if (!updated) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json({ success: true, user: updated });
   } catch (err) {
-    console.error('❌ Role update error:', err.message);
+    console.error('❌ Role update error:', err);
     res.status(500).json({ error: 'Failed to update role' });
   }
 };
@@ -74,12 +77,13 @@ exports.listAllUsers = async (req, res) => {
     const users = await User.find().select('-password');
     res.status(200).json(users);
   } catch (err) {
-    console.error('❌ Error fetching users:', err.message);
+    console.error('❌ Error fetching users:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };
 
 // ✅ Update user role by internal DB ID (used in admin panel)
+// Validate userId is a valid ObjectId before calling findByIdAndUpdate
 exports.setUserRoleById = async (req, res) => {
   const { userId, role } = req.body;
 
@@ -87,11 +91,16 @@ exports.setUserRoleById = async (req, res) => {
     return res.status(400).json({ error: 'Missing userId or role' });
   }
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ error: 'Invalid userId format' });
+  }
+
   try {
-    await User.findByIdAndUpdate(userId, { role });
-    res.status(200).json({ success: true });
+    const updated = await User.findByIdAndUpdate(userId, { role }, { new: true });
+    if (!updated) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json({ success: true, user: updated });
   } catch (err) {
-    console.error('❌ Error updating role by ID:', err.message);
+    console.error('❌ Error updating role by ID:', err);
     res.status(500).json({ error: 'Failed to update role' });
   }
 };

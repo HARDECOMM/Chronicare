@@ -2,10 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { useAuth } from '@clerk/clerk-react';
-import { AppointmentsAPI } from '../api/AppointmentsAPI';
-import { AppointmentCard } from '../components/UI/AppointmentCard';
-import AppointmentFilters from '../components/UI/AppointmentFilters';
-import PaginationControls from '../components/UI/PaginationControls';
+import { appointmentsAPI } from '../../api/appointmentsAPI';
+import { AppointmentCard } from '../../components/UI/AppointmentCard';
+import AppointmentFilters from '../../components/UI/AppointmentFilters';
+import PaginationControls from '../../components/UI/PaginationControls';
 
 export function Appointments() {
   const [appointments, setAppointments] = useState([]);
@@ -31,7 +31,7 @@ export function Appointments() {
     setError('');
     try {
       const token = await getToken();
-      const data = await AppointmentsAPI.listMine(token);
+      const data = await appointmentsAPI.listMine(token);
       const safeData = Array.isArray(data) ? data : data?.data || [];
       setAppointments(safeData);
     } catch (err) {
@@ -46,7 +46,7 @@ export function Appointments() {
     setUpdatingId(id);
     try {
       const token = await getToken();
-      await AppointmentsAPI.updateStatus(id, status, token);
+      await appointmentsAPI.updateStatus(id, status, token);
       toast.success(`Appointment ${status} successfully`);
       await loadAppointments();
     } catch (err) {
@@ -62,7 +62,7 @@ export function Appointments() {
     if (!window.confirm('Are you sure you want to delete this appointment?')) return;
     try {
       const token = await getToken();
-      await AppointmentsAPI.remove(id, token);
+      await appointmentsAPI.remove(id, token);
       toast.success('Appointment deleted');
       await loadAppointments();
     } catch (err) {

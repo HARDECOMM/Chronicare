@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { AppointmentsAPI } from '../api/AppointmentsAPI';
-import { AppointmentCard } from '../components/UI/AppointmentCard';
+import { appointmentsAPI } from '../../api/appointmentsAPI';
+import { AppointmentCard } from '../../components/UI/AppointmentCard';
 
 // 🩺 Named export for use with { PatientAppointments }
 export const PatientAppointments = () => {
@@ -12,7 +12,7 @@ export const PatientAppointments = () => {
   useEffect(() => {
     async function fetchAppointments() {
       try {
-        const res = await AppointmentsAPI.listByPatient(id);
+        const res = await appointmentsAPI.listByPatient(id);
         setAppointments(res);
       } catch (err) {
         console.error('Failed to load patient appointments:', err);

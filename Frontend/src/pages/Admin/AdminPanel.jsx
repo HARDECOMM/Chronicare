@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UsersAPI } from '../api/UsersAPI';
+import { usersAPI } from '../../api/usersAPI';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,7 +23,7 @@ export function AdminPanel() {
 
   async function updateRole(userId, newRole) {
     try {
-      await UsersAPI.setRole(userId, newRole);
+      await usersAPI.setRole(userId, newRole);
       toast.success(`Role updated to ${newRole}`);
       await loadUsers();
     } catch (err) {
