@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { usersAPI } from '../../api/usersAPI';
+import { usersAPI } from '../../api/patientsAPI';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 

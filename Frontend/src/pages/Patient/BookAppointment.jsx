@@ -1,3 +1,4 @@
+
 // src/pages/Patient/BookAppointment.jsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -6,28 +7,41 @@ import { appointmentsAPI } from '../../api/appointmentsAPI';
 import { AppointmentCard } from '../../components/UI/AppointmentCard';
 import { toast } from 'react-hot-toast';
 
+/**
+ * BookAppointment page
+ * - Loads doctor profile for the given doctorId
+ * - Lets the signed-in patient create an appointment
+ * - Shows the patient's existing appointments
+ * - After a successful booking, dispatches a global event so doctor panels listening
+ *   for "appointment:created" can refetch immediately (non-invasive, additive).
+ */
 export function BookAppointment() {
   const { doctorId } = useParams();
   const navigate = useNavigate();
   const { getToken } = useAuth();
 
+  // doctor profile loaded from API (if available)
   const [doctor, setDoctor] = useState(null);
-  const [date, setDate] = useState('');
-  const [type, setType] = useState('virtual'); // default to avoid empty required
+
+  // form fields
+  const [date, setDate] = useState(''); // ISO-like string from <input type="datetime-local">
+  const [type, setType] = useState('virtual'); // default avoids empty required value
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // patient's appointment list UI state
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
 
+  // Fetch doctor profile when page mounts or doctorId changes
   useEffect(() => {
     let mounted = true;
     async function fetchDoctor() {
       try {
         const token = await getToken();
         console.log('Requesting doctor id:', doctorId);
-        const d = await appointmentsAPI.getDoctor(doctorId, token);
+        const d = await appointmentsAPI.getDoctor(doctorId, token); // expected to return doctor object
         console.log('fetched doctor', d);
         if (mounted) setDoctor(d);
       } catch (err) {
@@ -35,7 +49,7 @@ export function BookAppointment() {
         const status = err?.response?.status;
         if (status === 404) {
           toast.error('Doctor not found. It may have been removed.');
-          // optional: navigate('/doctors');
+          // optional navigation: navigate('/doctors');
         } else {
           toast.error('Failed to load doctor profile');
         }
@@ -45,13 +59,13 @@ export function BookAppointment() {
     return () => { mounted = false; };
   }, [doctorId, getToken]);
 
-
-
+  // Load the patient's own appointments (for this user)
   async function loadAppointments() {
     setLoadingAppointments(true);
     try {
       const token = await getToken();
       const data = await appointmentsAPI.listMine(token);
+      // Support multiple shapes: array or { data: [...] }
       setAppointments(Array.isArray(data) ? data : data?.data || []);
     } catch (err) {
       console.error('❌ Failed to load appointments:', err);
@@ -61,13 +75,20 @@ export function BookAppointment() {
     }
   }
 
+  // Load appointments once on mount
+  useEffect(() => {
+    loadAppointments();
+    // no cleanup; simple one-time load on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Submit handler: create appointment
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('handleSubmit called', { doctorId, date, type, notes, doctor });
     setLoading(true);
 
     try {
-      // basic client validation
+      // Basic client-side validation
       if (!date) {
         toast.error('Please choose a date and time');
         setLoading(false);
@@ -81,20 +102,37 @@ export function BookAppointment() {
 
       const token = await getToken();
       const payload = {
-        // prefer the fetched doctor's _id (Mongo id)
+        // prefer the fetched doctor's DB _id if available; fall back to route param
         doctorId: doctor?._id || doctorId,
+        // use `date` as submitted; backend may expect `time` or `date` — match your API
         date,
         type,
         notes,
       };
       console.log('sending payload', payload);
 
+      // Create appointment on server
       const response = await appointmentsAPI.create(payload, token);
       console.log('booking response', response);
 
+      // Expect created appointment object with _id
       if (response && response._id) {
         toast.success('Appointment booked successfully');
+
+        // 1) Refresh this patient's appointments list immediately
         await loadAppointments();
+
+        // 2) Notify any doctor-side components (or other tabs) to refetch immediately
+        //    This is an additive global event that doctor panels listen for.
+        //    It avoids tight coupling and requires no prop drilling.
+        try {
+          window.dispatchEvent(new Event('appointment:created'));
+        } catch (e) {
+          // fail silently if dispatch is not supported in some envs
+          console.warn('Could not dispatch appointment:created event', e);
+        }
+
+        // 3) Navigate to patient's appointments page after a short delay so toast is visible
         setTimeout(() => navigate('/appointments'), 800);
       } else {
         console.error('Unexpected create response', response);
@@ -111,6 +149,7 @@ export function BookAppointment() {
     }
   };
 
+  // Update appointment status (used for patient's local actions)
   const handleStatusUpdate = async (id, status) => {
     setUpdatingId(id);
     try {
@@ -126,6 +165,7 @@ export function BookAppointment() {
     }
   };
 
+  // Delete appointment with confirmation
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this appointment?')) return;
     try {
@@ -135,7 +175,6 @@ export function BookAppointment() {
       setAppointments((prev) => prev.filter((appt) => appt._id !== id));
     } catch (err) {
       console.error('❌ Delete failed:', err);
-      // show backend message if available
       const serverMsg = err?.response?.data?.error || err?.message;
       toast.error(serverMsg || 'Failed to delete appointment');
     }

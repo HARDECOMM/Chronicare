@@ -1,6 +1,5 @@
-// App.jsx
-import { Routes, Route } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Routes, Route } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   useAuth,
   SignedIn,
@@ -8,37 +7,39 @@ import {
   SignIn,
   UserButton,
   useUser,
-} from '@clerk/clerk-react';
+} from "@clerk/clerk-react";
 
-// 🏠 Public pages
-import { Home } from './pages/Home';
-import { SelectRole } from './pages/SelectRole';
+// 🏠 Pages
+import { SelectRole } from "./components/roleBase/SelectRole";
+import { Landing } from "./components/roleBase/Landing";
 
 // 👨‍⚕️ Doctor pages
-import { DoctorDashboard } from './pages/Doctor/DoctorDashboard';
-import { DoctorProfileEditor } from './pages/Doctor/DoctorProfileEditor';
-import { DoctorLanding } from './pages/Doctor/DoctorLanding';
-import { DoctorPanelShell } from './components/UI/Doctor/DoctorPanelShell';
-import { CreateDoctorForm } from './pages/Doctor/CreateDoctorForm';
-import { DoctorProfileView } from './pages/Doctor/DoctorProfileView';
+import { DoctorPanelShell } from "./components/doctor/DoctorPanelShell";
+import { DoctorDashboard } from "./pages/doctor/DoctorDashboard";
+import { DoctorProfileEditor } from "./pages/doctor/DoctorProfileEditor";
+import { DoctorAppointments } from "./pages/doctor/DoctorAppointments";
+import { DoctorProfileView } from "./pages/doctor/DoctorProfileView";
 
-// 🧑‍🎓 Patient pages
-import { DoctorList } from './pages/Patient/DoctorList';
-import { BookAppointment } from './pages/Patient/BookAppointment';
-import { Appointments } from './pages/Patient/Appointments';
+// 👩‍⚕️ Patient pages
+import { PatientPanelShell } from "./components/patient/PatientPanelShell";
+import { PatientDashboard } from "./pages/patient/PatientDashboard";
+import { PatientProfileEditor } from "./pages/patient/PatientProfileEditor";
+import { PatientAppointments } from "./pages/patient/PatientAppointments";
 
-// 🧑‍💼 Admin pages
-import { AdminPanel } from './pages/Admin/AdminPanel';
-import { PatientAppointments } from './pages/Admin/PatientAppointments';
+// 🛠 Admin pages
+import { AdminPanelShell } from "./components/admin/adminPanel";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminUsers } from "./pages/admin/AdminUsers";
+import { AdminDoctors } from "./pages/admin/AdminDoctors";
+import { AdminAppointments } from "./pages/admin/AdminAppointment";
 
-// ✅ Backend role API (fixed import to match exported usersAPI)
-import { usersAPI } from './api/usersAPI';
+// ✅ Backend API
+import { usersAPI } from "./api/usersAPI";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Guard: render-only protection (no redirects, no loops)
-// - Shows a purple "Access denied" card when not allowed
-// - Use allow={role?.toLowerCase() === 'someRole'} to gate routes
-// ─────────────────────────────────────────────────────────────────────────────
+// 🎯 Redirect logic
+import { getRedirectUrlForRole } from "./components/roleBase/getRedirectUrl";
+
+// 🔒 Guard
 function Guard({ allow, children }) {
   if (allow === undefined) {
     return (
@@ -51,8 +52,12 @@ function Guard({ allow, children }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="max-w-md w-full bg-white p-6 rounded border border-purple-300">
-          <h2 className="text-purple-700 text-xl font-semibold mb-2">Access denied</h2>
-          <p className="text-gray-700">You don’t have permission to view this page.</p>
+          <h2 className="text-purple-700 text-xl font-semibold mb-2">
+            Access denied
+          </h2>
+          <p className="text-gray-700">
+            You don’t have permission to view this page.
+          </p>
         </div>
       </div>
     );
@@ -60,34 +65,16 @@ function Guard({ allow, children }) {
   return children;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Landing: decides what to render at "/"
-// - Signed-out → Home
-// - No role → SelectRole
-// - Patient → DoctorList (patient landing)
-// - Doctor → DoctorLanding (you can swap to DoctorDashboard if you prefer)
-// - Admin → AdminPanel
-// No Navigate here — pure render prevents loops
-// ─────────────────────────────────────────────────────────────────────────────
-function Landing({ isLoaded, user, role }) {
-  if (!isLoaded) {
+// 🔒 RequireRole wrapper — now uses backend role state
+function RequireRole({ requiredRole, currentRole, children }) {
+  if (currentRole === null) {
     return (
       <div className="flex justify-center items-center h-screen bg-white">
         <p className="text-purple-600 text-lg font-semibold">Loading...</p>
       </div>
     );
   }
-
-  if (!user) return <Home />;
-  if (!role) return <SelectRole />;
-
-  const r = role.toLowerCase();
-
-  if (r === 'patient') return <DoctorList />;
-  if (r === 'doctor') return <DoctorLanding />;
-  if (r === 'admin') return <AdminPanel role={role} />;
-
-  return <SelectRole />;
+  return <Guard allow={currentRole?.toLowerCase() === requiredRole.toLowerCase()}>{children}</Guard>;
 }
 
 export function App() {
@@ -95,71 +82,61 @@ export function App() {
   const { getToken } = useAuth();
   const [role, setRole] = useState(null);
 
-  // 🔄 Fetch role once when authenticated and role not yet known (no redirects here)
   useEffect(() => {
     if (!isLoaded || !user || role !== null) return;
 
     (async () => {
       try {
         const token = await getToken();
-        console.log('[App] token present?', !!token, 'API base:', import.meta.env.VITE_API_URL);
 
-        // 1) Try backend role
+        // Sync user into backend
+        await usersAPI.sync(user, token);
+
+        // Fetch role from backend
         let fetchedRole = null;
-        if (typeof usersAPI !== 'undefined' && usersAPI?.getRole) {
-          fetchedRole = await usersAPI.getRole(user.id, token);
+        try {
+          const res = await usersAPI.getRole(user.id, token);
+          fetchedRole = res?.role;
+        } catch (err) {
+          console.warn("Role fetch failed, falling back:", err);
         }
 
-        // 2) Fallback to Clerk metadata if backend returns nothing
-        if (!fetchedRole) {
-          fetchedRole = user.publicMetadata?.role || null;
-        }
-
-        console.log('Fetched role from backend:', fetchedRole);
         setRole(fetchedRole || null);
-
-        // Optional sync (safe, no navigation)
-        if (typeof usersAPI !== 'undefined' && usersAPI?.sync) {
-          try {
-            await usersAPI.sync(user, token);
-          } catch (syncErr) {
-            console.warn('Sync failed, continuing:', syncErr);
-          }
-        }
       } catch (err) {
-        console.error('❌ Failed to fetch role:', err);
-        setRole(user.publicMetadata?.role || null);
+        console.error("❌ Failed to fetch role:", err);
+        setRole(null);
       }
     })();
   }, [isLoaded, user, role, getToken]);
 
   return (
     <div className="bg-white min-h-screen">
-      {/* 🔐 Header for signed-in users (purple accent) */}
       <SignedIn>
         <div className="flex justify-end p-4">
           <UserButton
             appearance={{
-              elements: { avatarBox: 'ring-2 ring-purple-600' },
+              elements: { avatarBox: "ring-2 ring-purple-600" },
             }}
           />
         </div>
       </SignedIn>
 
-      {/* 🔐 Sign-in page (purple + white) */}
       <SignedOut>
         <div className="flex justify-center items-center h-screen bg-white">
           <div className="bg-white p-6 rounded shadow max-w-md w-full">
             <SignIn
-              redirectUrl="/"
+              forceRedirectUrl={getRedirectUrlForRole(role)}
               appearance={{
                 elements: {
-                  card: 'bg-white shadow-none',
-                  headerTitle: 'text-purple-600 text-2xl font-bold',
-                  formFieldInput: 'border border-purple-300 rounded px-3 py-2',
-                  footerActionText: 'text-gray-700',
-                  socialButtonsBlockButton: 'bg-purple-600 text-white hover:bg-purple-700',
-                  formButtonPrimary: 'bg-purple-600 text-white hover:bg-purple-700',
+                  card: "bg-white shadow-none",
+                  headerTitle: "text-purple-600 text-2xl font-bold",
+                  formFieldInput:
+                    "border border-purple-300 rounded px-3 py-2",
+                  footerActionText: "text-gray-700",
+                  socialButtonsBlockButton:
+                    "bg-purple-600 text-white hover:bg-purple-700",
+                  formButtonPrimary:
+                    "bg-purple-600 text-white hover:bg-purple-700",
                 },
               }}
             />
@@ -167,88 +144,53 @@ export function App() {
         </div>
       </SignedOut>
 
-      {/* 📌 Routes (render-only, no Navigate in effects) */}
       <Routes>
         <Route path="/" element={<Landing isLoaded={isLoaded} user={user} role={role} />} />
-        <Route path="/select-role" element={<SelectRole />} />
+        <Route path="/select-role" element={<SelectRole setRole={setRole} />} />
 
-        {/* 👨‍⚕️ Doctor routes */}
+        {/* Patient routes */}
+        <Route
+          path="/patient/*"
+          element={
+            <RequireRole requiredRole="patient" currentRole={role}>
+              <PatientPanelShell />
+            </RequireRole>
+          }
+        >
+          <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="profile" element={<PatientProfileEditor />} />
+          <Route path="appointments" element={<PatientAppointments />} />
+        </Route>
+
+        {/* Doctor routes */}
         <Route
           path="/doctor/*"
           element={
-            <Guard allow={role ? role.toLowerCase() === 'doctor' : undefined}>
+            <RequireRole requiredRole="doctor" currentRole={role}>
               <DoctorPanelShell />
-            </Guard>
+            </RequireRole>
           }
         >
-          <Route index element={<DoctorLanding />} />
           <Route path="dashboard" element={<DoctorDashboard />} />
-          <Route path="create" element={<CreateDoctorForm />} />
-          <Route path="profile" element={<DoctorProfileEditor />} />
+          <Route path="edit" element={<DoctorProfileEditor />} />
+          <Route path="appointments" element={<DoctorAppointments />} />
           <Route path="view/:id" element={<DoctorProfileView />} />
         </Route>
 
+        {/* Admin routes */}
         <Route
-          path="/dashboard"
+          path="/admin/*"
           element={
-            <Guard allow={role ? role.toLowerCase() === 'doctor' : undefined}>
-              <DoctorDashboard />
-            </Guard>
+            <RequireRole requiredRole="admin" currentRole={role}>
+              <AdminPanelShell />
+            </RequireRole>
           }
-        />
-
-        <Route
-          path="/doctor/profile"
-          element={
-            <Guard allow={role ? role.toLowerCase() === 'doctor' : undefined}>
-              <DoctorProfileEditor />
-            </Guard>
-          }
-        />
-
-        {/* 🧑‍🎓 Patient routes */}
-        <Route
-          path="/doctors"
-          element={
-            <Guard allow={role ? role.toLowerCase() === 'patient' : undefined}>
-              <DoctorList />
-            </Guard>
-          }
-        />
-        <Route
-          path="/appointments/:doctorId"
-          element={
-            <Guard allow={role ? role.toLowerCase() === 'patient' : undefined}>
-              <BookAppointment />
-            </Guard>
-          }
-        />
-        <Route
-          path="/appointments"
-          element={
-            <Guard allow={role ? role.toLowerCase() === 'patient' : undefined}>
-              <Appointments />
-            </Guard>
-          }
-        />
-
-        {/* 🧑‍💼 Admin routes */}
-        <Route
-          path="/admin"
-          element={
-            <Guard allow={role ? role.toLowerCase() === 'admin' : undefined}>
-              <AdminPanel role={role} />
-            </Guard>
-          }
-        />
-        <Route
-          path="/admin/patient/:id/appointments"
-          element={
-            <Guard allow={role ? role.toLowerCase() === 'admin' : undefined}>
-              <PatientAppointments />
-            </Guard>
-          }
-        />
+        >
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="doctors" element={<AdminDoctors />} />
+          <Route path="appointments" element={<AdminAppointments />} />
+        </Route>
       </Routes>
     </div>
   );

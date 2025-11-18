@@ -1,39 +1,38 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { doctorsAPI } from '../../api/doctorsAPI';
-import { toast } from 'react-hot-toast';
-import DoctorAppointmentsPanel from '../../components/DoctorAppointmentsPanel';
+// pages/doctor/DoctorProfileView.jsx
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useParams } from "react-router-dom";
 
 export function DoctorProfileView() {
-  const { id } = useParams();
-  const [doctor, setDoctor] = useState(null);
-
-  useEffect(() => {
-    if (!id) return;
-    let mounted = true;
-    (async () => {
-      try {
-        const d = await doctorsAPI.getById(id);
-        if (!mounted) return;
-        setDoctor(d);
-      } catch (err) {
-        console.error('Failed loading profile', err);
-        toast.error('Failed to load profile');
-      }
-    })();
-    return () => { mounted = false; };
-  }, [id]);
-
-  if (!doctor) return <div className="p-6 text-gray-700">Loading profile...</div>;
+  const { id } = useParams(); // doctor id from route
+  // Example static data — replace with API call using id
+  const doctor = {
+    name: "Dr. Sarah Johnson",
+    specialty: "Cardiology",
+    email: "sarah.johnson@example.com",
+    experience: "10 years",
+    clinic: "City Hospital",
+    status: "Active",
+  };
 
   return (
-    <div className="bg-white min-h-screen p-6">
-      <h1 className="text-2xl font-bold text-purple-700 mb-4">{doctor.name}</h1>
-      <p className="text-gray-700">{doctor.specialty} • {doctor.location}</p>
-      <p className="mt-4 text-gray-700">{doctor.bio}</p>
-      
-      {/* Render the DoctorAppointmentsPanel here */}
-      <DoctorAppointmentsPanel doctorId={id} />
-    </div>
+    <Card className="max-w-lg mx-auto">
+      <CardHeader>
+        <CardTitle className="text-purple-700">Doctor Profile</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p><strong>Name:</strong> {doctor.name}</p>
+        <p><strong>Specialty:</strong> {doctor.specialty}</p>
+        <p><strong>Email:</strong> {doctor.email}</p>
+        <p><strong>Experience:</strong> {doctor.experience}</p>
+        <p><strong>Clinic:</strong> {doctor.clinic}</p>
+        <p>
+          <strong>Status:</strong>{" "}
+          <Badge variant="default" className="capitalize">
+            {doctor.status}
+          </Badge>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

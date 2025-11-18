@@ -1,99 +1,258 @@
-// src/pages/Doctor/CreateDoctorForm.jsx
-import { useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { doctorsAPI } from '../../api/doctorsAPI'; // change to: import { doctorsAPI } from '../../api/doctorsAPI' if you use named export
-import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { doctorsAPI } from "../../api/doctorsAPI";
+import { useAuth, useUser } from "@clerk/clerk-react";
+import { toast } from "react-hot-toast";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
+import { useNavigate } from "react-router-dom";
 
-export function CreateDoctorForm({ onCreated }) {
+export function CreateDoctorForm({ existingProfile, onSuccess, onCancel }) {
   const { getToken } = useAuth();
+  const { user } = useUser();
   const navigate = useNavigate();
 
-  const [name, setName] = useState('');
-  const [specialty, setSpecialty] = useState('');
-  const [location, setLocation] = useState('');
-  const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    specialty: "",
+    licenseNumber: "",
+    location: "",
+    bio: "",
+    yearsOfExperience: "",
+    languagesSpoken: "",
+    phone: "",
+    email: "",
+    address: "",
+    profileImage: null,
+  });
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    if (existingProfile) {
+      setForm({
+        name: existingProfile.name || "",
+        specialty: existingProfile.specialty || "",
+        licenseNumber: existingProfile.licenseNumber || "",
+        location: existingProfile.location || "",
+        bio: existingProfile.bio || "",
+        yearsOfExperience: existingProfile.yearsOfExperience || "",
+        languagesSpoken: existingProfile.languagesSpoken?.join(", ") || "",
+        phone: existingProfile.contactInfo?.phone || "",
+        email: existingProfile.contactInfo?.email || "",
+        address: existingProfile.contactInfo?.address || "",
+        profileImage: null,
+      });
+    }
+  }, [existingProfile]);
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!name || !specialty) {
-      toast.error('Please provide name and specialty');
+
+    const requiredFields = [
+      form.name,
+      form.specialty,
+      form.licenseNumber,
+      form.location,
+      form.email,
+      form.phone,
+    ];
+
+    if (requiredFields.some(field => !field.trim())) {
+      toast.error("Please fill in all required fields.");
       return;
     }
+
     setLoading(true);
     try {
       const token = await getToken();
-      console.log('[CreateDoctorForm] token present?', !!token);
 
-      const payload = { name, specialty, location, bio };
+      // Preserve existing image if no new one is uploaded
+      let imageUrl = existingProfile?.profileImage || null;
 
-      // call API (assumes doctorsAPI.create exists)
-      const doctor = await doctorsAPI.create(payload, token);
+      if (form.profileImage) {
+        const imageData = new FormData();
+        imageData.append("file", form.profileImage);
+        imageData.append("upload_preset", "doctor_profile_upload");
 
-      console.log('[CreateDoctorForm] create response', doctor);
+        const res = await fetch("https://api.cloudinary.com/v1_1/di4qeeuua/image/upload", {
+          method: "POST",
+          body: imageData,
+        });
 
-      if (!doctor) {
-        toast.error('Server returned no data');
-        return;
+        const data = await res.json();
+        imageUrl = data.secure_url;
       }
 
-      toast.success('Doctor profile created');
-      onCreated && onCreated(doctor);
+      const payload = {
+        clerkId: user.id,
+        name: form.name.trim(),
+        specialty: form.specialty.trim(),
+        licenseNumber: form.licenseNumber.trim(),
+        location: form.location.trim(),
+        bio: form.bio?.trim() || null,
+        profileImage: imageUrl,
+        contactInfo: {
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          address: form.address?.trim() || null,
+        },
+        yearsOfExperience: Number(form.yearsOfExperience) || 0,
+        languagesSpoken: form.languagesSpoken
+          ? form.languagesSpoken.split(",").map(s => s.trim()).filter(Boolean)
+          : [],
+      };
 
-      // navigate only when we have an id
-      const id = doctor._id ?? doctor.id;
-      if (id) {
-        navigate(`/doctor/view/${id}`);
+      const isUpdating = !!existingProfile;
+
+      if (isUpdating) {
+        await doctorsAPI.updateMyProfile(payload, token);
+        toast.success("Profile updated successfully!");
       } else {
-        console.warn('[CreateDoctorForm] created doctor missing id, staying on page');
+        await doctorsAPI.createMyProfile(payload, token);
+        toast.success("Profile created successfully!");
+        navigate("/doctor/profile");
       }
+
+      if (onSuccess) onSuccess();
     } catch (err) {
-      console.error('Create doctor failed', err, err?.response?.status, err?.response?.data);
-      toast.error(err?.response?.data?.error || err?.message || 'Failed to create doctor');
+      console.error("🔴 Submission error:", err.response?.data || err.message);
+      toast.error(err.response?.data?.error || "Failed to save profile");
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  const isFormValid = [
+    form.name,
+    form.specialty,
+    form.licenseNumber,
+    form.location,
+    form.email,
+    form.phone,
+  ].every(field => field.trim());
 
   return (
-    <div className="max-w-xl mx-auto mt-8 p-4">
-      <h2 className="text-xl font-bold mb-4">Create Doctor Profile</h2>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Full name"
-          className="w-full border px-3 py-2 rounded"
+    <form onSubmit={handleSubmit} className="space-y-4 bg-white shadow rounded-lg p-6">
+      <h2 className="text-2xl font-bold text-purple-700 mb-4">
+        {existingProfile ? "Update Your Profile" : "Create Your Profile"}
+      </h2>
+
+      {/* Profile Image Upload with preview */}
+      <div>
+        <Label htmlFor="profileImage">Profile Image</Label>
+        <label className="block w-full cursor-pointer border border-dashed border-purple-400 p-4 text-center rounded hover:bg-purple-50">
+          <input
+            type="file"
+            id="profileImage"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                setForm({ ...form, profileImage: file });
+              }
+            }}
+            className="hidden"
+          />
+          {form.profileImage ? (
+            <span>{form.profileImage.name}</span>
+          ) : (
+            <span className="text-purple-600">Click to upload image</span>
+          )}
+        </label>
+
+        {form.profileImage && (
+          <img
+            src={URL.createObjectURL(form.profileImage)}
+            alt="Preview"
+            className="mt-4 w-24 h-24 rounded-full object-cover border border-gray-300"
+          />
+        )}
+      </div>
+
+      {/* Form fields */}
+      <div>
+        <Label htmlFor="name">Full Name</Label>
+        <Input id="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="specialty">Specialty</Label>
+        <Input id="specialty" value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="licenseNumber">License Number</Label>
+        <Input id="licenseNumber" value={form.licenseNumber} onChange={e => setForm({ ...form, licenseNumber: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="location">Location</Label>
+        <Input id="location" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="yearsOfExperience">Years of Experience</Label>
+        <Input id="yearsOfExperience" type="number" value={form.yearsOfExperience} onChange={e => setForm({ ...form, yearsOfExperience: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="languagesSpoken">Languages Spoken (comma-separated)</Label>
+        <Input id="languagesSpoken" value={form.languagesSpoken} onChange={e => setForm({ ...form, languagesSpoken: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input id="phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="address">Address</Label>
+        <Input id="address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+      </div>
+
+      <div>
+        <Label htmlFor="bio">Bio</Label>
+        <Textarea
+          id="bio"
+          value={form.bio}
+          onChange={e => setForm({ ...form, bio: e.target.value })}
+          placeholder="Tell us about yourself"
         />
-        <input
-          required
-          value={specialty}
-          onChange={(e) => setSpecialty(e.target.value)}
-          placeholder="Specialty"
-          className="w-full border px-3 py-2 rounded"
-        />
-        <input
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Location"
-          className="w-full border px-3 py-2 rounded"
-        />
-        <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder="Short bio"
-          className="w-full border px-3 py-2 rounded"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
+      </div>
+
+      {/* Submit button */}
+      <Button
+        type="submit"
+        disabled={!isFormValid || loading}
+        className={`w-full ${
+          loading
+            ? "bg-purple-400 cursor-not-allowed"
+            : "bg-purple-600 text-white hover:bg-purple-700"
+        }`}
+      >
+        {loading
+          ? "Saving..."
+          : existingProfile
+          ? "Update Profile"
+          : "Save Profile"}
+      </Button>
+
+      {/* Cancel button */}
+      {onCancel && (
+        <Button
+          type="button"
+          onClick={onCancel}
+          className="bg-gray-300 text-gray-800 hover:bg-gray-400 w-full mt-2"
         >
-          {loading ? 'Saving...' : 'Create profile'}
-        </button>
-      </form>
-    </div>
+          Cancel
+        </Button>
+      )}
+    </form>
   );
 }

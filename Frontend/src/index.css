@@ -1,11 +1,1 @@
-@import "tailwindcss";
-
-:root{
-  color-scheme: light;
-  --purple-700: #5b21b6;
-  --purple-600: #6d28d9;
-  --purple-50:  #f5f3ff;
-  --gray-50:    #f9fafb;
-  --gray-700:   #374151;
-  --accent-green:#059669;
-}
+@import "tailwindcss"
