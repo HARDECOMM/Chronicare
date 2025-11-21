@@ -14,7 +14,11 @@ if (!PUBLISHABLE_KEY) {
 function Root() {
   const navigate = useNavigate();
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} navigate={to => navigate(to)}>
+    <ClerkProvider
+      publishableKey={PUBLISHABLE_KEY}
+      routerPush={to => navigate(to)}
+      routerReplace={to => navigate(to, { replace: true })}
+    >
       <App />
       <Toaster />
     </ClerkProvider>

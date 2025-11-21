@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/doctor/card";
 import { Badge } from "@/components/ui/badge";
 
 export function ProfileCard({ title, profile, fields }) {

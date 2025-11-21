@@ -1,23 +1,15 @@
-// components/ui/shared/UserTable.jsx
 import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
+  Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/doctor/button";
 
 export function UserTable({ users, columns, actions }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          {columns.map((col, idx) => (
-            <TableHead key={idx}>{col.label}</TableHead>
-          ))}
+          {columns.map((col, idx) => <TableHead key={idx}>{col.label}</TableHead>)}
           {actions && <TableHead>Actions</TableHead>}
         </TableRow>
       </TableHeader>
@@ -27,23 +19,12 @@ export function UserTable({ users, columns, actions }) {
             {columns.map((col, cIdx) => (
               <TableCell key={cIdx}>
                 {col.type === "status" ? (
-                  <Badge
-                    variant={
-                      user[col.key] === "Active"
-                        ? "default"
-                        : "destructive"
-                    }
-                    className="capitalize"
-                  >
+                  <Badge variant={user[col.key] === "Active" ? "default" : "destructive"} className="capitalize">
                     {user[col.key]}
                   </Badge>
                 ) : col.type === "role" ? (
-                  <Badge variant="outline" className="capitalize">
-                    {user[col.key]}
-                  </Badge>
-                ) : (
-                  user[col.key]
-                )}
+                  <Badge variant="outline" className="capitalize">{user[col.key]}</Badge>
+                ) : user[col.key]}
               </TableCell>
             ))}
             {actions && (

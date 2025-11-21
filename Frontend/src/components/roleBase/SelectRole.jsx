@@ -1,37 +1,71 @@
-// src/components/auth/SelectRole.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser, useAuth } from "@clerk/clerk-react";
-import { usersAPI } from "../../api/usersAPI";   // ✅ Correct API for role management
+import { usersAPI } from "../../api/usersAPI";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
-
-// shadcn/ui components
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/doctor/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/doctor/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+const roles = [
+  { key: "patient", icon: "👤", description: "Book appointments and manage your health profile." },
+  { key: "doctor", icon: "🩺", description: "Manage patients and appointments." },
+];
+
 export function SelectRole({ setRole }) {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  // Initial check: sync user and fetch existing role
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+    let mounted = true;
+
+    (async () => {
+      try {
+        const token = await getToken();
+        await usersAPI.sync(user, token);
+        const res = await usersAPI.getRole(user.id, token);
+        const existingRole = res?.role ?? null;
+
+        if (!mounted) return;
+        if (existingRole) {
+          setRole(existingRole);
+          // Redirect handled in App.jsx
+        }
+      } catch (err) {
+        console.warn("SelectRole init check failed:", err);
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [isLoaded, user, getToken]);
+
+  if (checking) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-white">
+        <p className="text-purple-600 text-lg font-semibold">Checking account…</p>
+      </div>
+    );
+  }
 
   const handleSubmit = async () => {
     if (!selectedRole) return toast.error("Please select a role");
     setLoading(true);
-
     try {
       const token = await getToken();
       const role = selectedRole.toLowerCase();
 
-      // ✅ Use usersAPI for sync + role assignment
       await usersAPI.sync(user, token);
-      await usersAPI.setRole(user.id, role, token);
+      await usersAPI.setRole(role, token);
 
       setRole(role);
       toast.success(`Role set to ${selectedRole}`);
-      navigate(getRedirectUrlForRole(role));
+      // Redirect handled centrally in App.jsx
     } catch (err) {
       console.error("❌ Role update failed:", err);
       toast.error("Failed to set role");
@@ -47,40 +81,22 @@ export function SelectRole({ setRole }) {
       </CardHeader>
       <CardContent>
         <RadioGroup value={selectedRole} onValueChange={setSelectedRole}>
-          {["patient", "doctor", "admin"].map((role) => (
-            <div key={role} className="flex items-center space-x-2">
-              <RadioGroupItem value={role} id={role} />
-              <label
-                htmlFor={role}
-                className="capitalize cursor-pointer hover:text-purple-600"
-              >
-                {role}
+          {roles.map(({ key, icon, description }) => (
+            <div key={key} className="flex items-start space-x-3 p-3 border rounded hover:bg-purple-50">
+              <RadioGroupItem value={key} id={key} />
+              <label htmlFor={key} className="flex flex-col cursor-pointer">
+                <span className="flex items-center gap-2 font-semibold capitalize">
+                  {icon} {key}
+                </span>
+                <span className="text-sm text-gray-600">{description}</span>
               </label>
             </div>
           ))}
         </RadioGroup>
-        <Button
-          disabled={loading}
-          className="mt-6 w-full"
-          onClick={handleSubmit}
-        >
+        <Button disabled={loading} className="mt-6 w-full" onClick={handleSubmit}>
           {loading ? "Setting role..." : "Confirm Role"}
         </Button>
       </CardContent>
     </Card>
   );
-}
-
-// Helper function for navigation
-function getRedirectUrlForRole(role) {
-  switch (role) {
-    case "patient":
-      return "/patient/dashboard";
-    case "doctor":
-      return "/doctor/dashboard";
-    case "admin":
-      return "/admin/dashboard";
-    default:
-      return "/";
-  }
 }

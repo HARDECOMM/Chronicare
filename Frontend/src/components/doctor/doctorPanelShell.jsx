@@ -1,23 +1,67 @@
-import { Outlet } from "react-router-dom";
-import { LayoutShell } from "@/components/ui/shared/LayoutShell";
-import { SidebarNav } from "@/components/ui/shared/SidebarNav";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
 
 export function DoctorPanelShell() {
-  const links = [
-    { to: "/doctor/dashboard", label: "Dashboard" },
-    { to: "/doctor/edit", label: "Edit Profile" },
-    { to: "/doctor/appointments", label: "Appointments" },
-  ];
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
-  const actions = [
-    { label: "Logout", onClick: () => console.log("Doctor logout") },
-  ];
+  const linkBase = "px-4 py-2 rounded text-sm font-medium transition-colors";
+  const active = "bg-purple-600 text-white";
+  const idle = "text-purple-700 hover:bg-purple-50";
+
+  const handleLogout = async () => {
+    try {
+      await signOut(); // ✅ End Clerk session
+      navigate("/", { replace: true }); // ✅ Redirect to landing page
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
 
   return (
-    <LayoutShell
-      sidebar={<SidebarNav title="Doctor Panel" links={links} actions={actions} />}
-    >
-      <Outlet />
-    </LayoutShell>
+    <div className="min-h-screen bg-gray-50">
+      <header className="border-b border-purple-200 bg-white">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <h1 className="text-xl font-bold text-purple-700">Doctor Portal</h1>
+          <nav className="flex gap-4 items-center">
+            <NavLink
+              to="/doctor"
+              end
+              className={({ isActive }) => `${linkBase} ${isActive ? active : idle}`}
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/doctor/appointments"
+              className={({ isActive }) => `${linkBase} ${isActive ? active : idle}`}
+            >
+              Appointments
+            </NavLink>
+            <NavLink
+              to="/doctor/edit"
+              className={({ isActive }) => `${linkBase} ${isActive ? active : idle}`}
+            >
+              Edit Profile
+            </NavLink>
+            <NavLink
+              to="/doctor/view"
+              className={({ isActive }) => `${linkBase} ${isActive ? active : idle}`}
+            >
+              View Profile
+            </NavLink>
+            <button
+              onClick={handleLogout}
+              className="ml-4 px-4 py-2 rounded bg-red-500 text-white text-sm font-medium hover:bg-red-600"
+            >
+              Logout
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        <Outlet />
+      </main>
+    </div>
   );
 }

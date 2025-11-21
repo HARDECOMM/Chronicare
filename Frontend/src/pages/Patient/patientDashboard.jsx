@@ -1,33 +1,39 @@
-import { StatsCard } from "@/components/ui/statsCard";
-import { ProfileCard } from "@/components/ui/profileCard";
+// src/pages/patient/PatientDashboard.jsx
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import { patientsAPI } from "../../api/patientAPI";
+import { toast } from "react-hot-toast";
 
 export function PatientDashboard() {
-  const stats = {
-    upcomingAppointments: 3,
-    completedAppointments: 12,
-  };
+  const { getToken } = useAuth();
+  const [appointments, setAppointments] = useState([]);
 
-  const profile = {
-    name: "John Doe",
-    email: "john@example.com",
-    dateOfBirth: "1990-05-15",
-    gender: "Male",
-  };
-
-  const fields = [
-    { key: "name", label: "Name" },
-    { key: "email", label: "Email" },
-    { key: "dateOfBirth", label: "Date of Birth" },
-    { key: "gender", label: "Gender", type: "badge" },
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await patientsAPI.getMyAppointments(token);
+        setAppointments(res || []);
+      } catch (err) {
+        toast.error(err.message || "Failed to load appointments");
+      }
+    })();
+  }, [getToken]);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <StatsCard title="Upcoming Appointments" value={stats.upcomingAppointments} />
-        <StatsCard title="Completed Appointments" value={stats.completedAppointments} />
-      </div>
-      <ProfileCard title="Profile Summary" profile={profile} fields={fields} />
+    <div>
+      <h2 className="text-purple-700 text-xl mb-4">Upcoming Appointments</h2>
+      {appointments.length === 0 ? (
+        <p>No upcoming appointments.</p>
+      ) : (
+        <ul>
+          {appointments.map((a) => (
+            <li key={a._id}>
+              {new Date(a.date).toLocaleString()} — {a.reason} with Dr. {a.doctorId?.name}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

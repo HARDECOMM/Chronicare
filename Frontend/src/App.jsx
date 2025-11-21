@@ -1,63 +1,48 @@
-import { Routes, Route } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
 import {
   useAuth,
   SignedIn,
-  SignedOut,
   SignIn,
+  SignUp,
   UserButton,
   useUser,
 } from "@clerk/clerk-react";
 
-// 🏠 Pages
 import { SelectRole } from "./components/roleBase/SelectRole";
 import { Landing } from "./components/roleBase/Landing";
 
-// 👨‍⚕️ Doctor pages
 import { DoctorPanelShell } from "./components/doctor/DoctorPanelShell";
 import { DoctorDashboard } from "./pages/doctor/DoctorDashboard";
 import { DoctorProfileEditor } from "./pages/doctor/DoctorProfileEditor";
 import { DoctorAppointments } from "./pages/doctor/DoctorAppointments";
 import { DoctorProfileView } from "./pages/doctor/DoctorProfileView";
+import { DoctorCreate } from "./pages/doctor/DoctorCreate";
 
-// 👩‍⚕️ Patient pages
 import { PatientPanelShell } from "./components/patient/PatientPanelShell";
 import { PatientDashboard } from "./pages/patient/PatientDashboard";
 import { PatientProfileEditor } from "./pages/patient/PatientProfileEditor";
-import { PatientAppointments } from "./pages/patient/PatientAppointments";
+import { BookAppointment } from "./pages/patient/BookAppointments";
 
-// 🛠 Admin pages
-import { AdminPanelShell } from "./components/admin/adminPanel";
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { AdminUsers } from "./pages/admin/AdminUsers";
-import { AdminDoctors } from "./pages/admin/AdminDoctors";
-import { AdminAppointments } from "./pages/admin/AdminAppointment";
-
-// ✅ Backend API
 import { usersAPI } from "./api/usersAPI";
+import { doctorsAPI } from "./api/doctorsAPI";
 
-// 🎯 Redirect logic
-import { getRedirectUrlForRole } from "./components/roleBase/getRedirectUrl";
-
-// 🔒 Guard
-function Guard({ allow, children }) {
-  if (allow === undefined) {
+function RequireRole({ requiredRole, currentRole, children }) {
+  if (currentRole === undefined) {
     return (
       <div className="flex justify-center items-center h-screen bg-white">
-        <p className="text-purple-600 text-lg font-semibold">Loading...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-purple-600"></div>
+        <p className="ml-4 text-purple-600 text-lg font-semibold">Loading role...</p>
       </div>
     );
   }
-  if (!allow) {
+  if (currentRole === null) return null;
+  if (currentRole?.toLowerCase() !== requiredRole.toLowerCase()) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="max-w-md w-full bg-white p-6 rounded border border-purple-300">
-          <h2 className="text-purple-700 text-xl font-semibold mb-2">
-            Access denied
-          </h2>
-          <p className="text-gray-700">
-            You don’t have permission to view this page.
-          </p>
+          <h2 className="text-purple-700 text-xl font-semibold mb-2">Access denied</h2>
+          <p className="text-gray-700">You don’t have permission to view this page.</p>
         </div>
       </div>
     );
@@ -65,87 +50,105 @@ function Guard({ allow, children }) {
   return children;
 }
 
-// 🔒 RequireRole wrapper — now uses backend role state
-function RequireRole({ requiredRole, currentRole, children }) {
-  if (currentRole === null) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-white">
-        <p className="text-purple-600 text-lg font-semibold">Loading...</p>
-      </div>
-    );
-  }
-  return <Guard allow={currentRole?.toLowerCase() === requiredRole.toLowerCase()}>{children}</Guard>;
-}
-
 export function App() {
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
-  const [role, setRole] = useState(null);
 
+  const [role, setRole] = useState(undefined);
+  const [hasDoctorProfile, setHasDoctorProfile] = useState(undefined);
+
+  const initOnceRef = useRef(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Initialization: sync user, fetch role/profile
   useEffect(() => {
-    if (!isLoaded || !user || role !== null) return;
+    if (!isLoaded || !user || initOnceRef.current) return;
+    initOnceRef.current = true;
 
     (async () => {
       try {
         const token = await getToken();
-
-        // Sync user into backend
         await usersAPI.sync(user, token);
 
-        // Fetch role from backend
-        let fetchedRole = null;
-        try {
-          const res = await usersAPI.getRole(user.id, token);
-          fetchedRole = res?.role;
-        } catch (err) {
-          console.warn("Role fetch failed, falling back:", err);
-        }
+        const roleRes = await usersAPI.getRole(user.id, token).catch(() => ({ role: null }));
+        const fetchedRole = roleRes?.role ?? null;
+        setRole(fetchedRole);
 
-        setRole(fetchedRole || null);
+        if (fetchedRole === "doctor") {
+          const docRes = await doctorsAPI.getMyProfile(token).catch(() => ({ profile: null }));
+          setHasDoctorProfile(!!docRes?.profile);
+        } else {
+          setHasDoctorProfile(false);
+        }
       } catch (err) {
-        console.error("❌ Failed to fetch role:", err);
+        console.error("Failed to initialize user role/profile:", err);
         setRole(null);
+        setHasDoctorProfile(false);
       }
     })();
-  }, [isLoaded, user, role, getToken]);
+  }, [isLoaded, user, getToken]);
+
+  // Redirect effect (centralized here)
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    // If no user, always go to landing
+    if (!user) {
+      if (location.pathname.startsWith("/doctor") || location.pathname.startsWith("/patient")) {
+        navigate("/", { replace: true });
+      }
+      return;
+    }
+
+    if (role === undefined) return;
+
+    if (role === null) {
+      if (!location.pathname.startsWith("/select-role")) {
+        navigate("/select-role", { replace: true });
+      }
+      return;
+    }
+
+    if (role === "doctor") {
+      if (hasDoctorProfile === undefined) return;
+      const target = hasDoctorProfile ? "/doctor" : "/doctor/create";
+      if (!location.pathname.startsWith("/doctor")) {
+        navigate(target, { replace: true });
+      }
+      return;
+    }
+
+    if (role === "patient") {
+      if (!location.pathname.startsWith("/patient")) {
+        navigate("/patient", { replace: true });
+      }
+      return;
+    }
+  }, [isLoaded, user, role, hasDoctorProfile, navigate, location.pathname]);
+
+  if (!isLoaded) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-purple-600"></div>
+        <p className="ml-4 text-purple-600 text-lg font-semibold">Loading account...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white min-h-screen">
       <SignedIn>
         <div className="flex justify-end p-4">
-          <UserButton
-            appearance={{
-              elements: { avatarBox: "ring-2 ring-purple-600" },
-            }}
-          />
+          <UserButton appearance={{ elements: { avatarBox: "ring-2 ring-purple-600" } }} />
         </div>
       </SignedIn>
 
-      <SignedOut>
-        <div className="flex justify-center items-center h-screen bg-white">
-          <div className="bg-white p-6 rounded shadow max-w-md w-full">
-            <SignIn
-              forceRedirectUrl={getRedirectUrlForRole(role)}
-              appearance={{
-                elements: {
-                  card: "bg-white shadow-none",
-                  headerTitle: "text-purple-600 text-2xl font-bold",
-                  formFieldInput:
-                    "border border-purple-300 rounded px-3 py-2",
-                  footerActionText: "text-gray-700",
-                  socialButtonsBlockButton:
-                    "bg-purple-600 text-white hover:bg-purple-700",
-                  formButtonPrimary:
-                    "bg-purple-600 text-white hover:bg-purple-700",
-                },
-              }}
-            />
-          </div>
-        </div>
-      </SignedOut>
-
       <Routes>
+        {/* Landing */}
         <Route path="/" element={<Landing isLoaded={isLoaded} user={user} role={role} />} />
+
+        {/* Role selection */}
         <Route path="/select-role" element={<SelectRole setRole={setRole} />} />
 
         {/* Patient routes */}
@@ -157,9 +160,9 @@ export function App() {
             </RequireRole>
           }
         >
-          <Route path="dashboard" element={<PatientDashboard />} />
+          <Route index element={<PatientDashboard />} />
           <Route path="profile" element={<PatientProfileEditor />} />
-          <Route path="appointments" element={<PatientAppointments />} />
+          <Route path="appointments" element={<BookAppointment />} />
         </Route>
 
         {/* Doctor routes */}
@@ -171,26 +174,71 @@ export function App() {
             </RequireRole>
           }
         >
-          <Route path="dashboard" element={<DoctorDashboard />} />
-          <Route path="edit" element={<DoctorProfileEditor />} />
+          <Route index element={<DoctorDashboard />} />
           <Route path="appointments" element={<DoctorAppointments />} />
-          <Route path="view/:id" element={<DoctorProfileView />} />
+          <Route path="edit" element={<DoctorProfileEditor />} />
+          <Route path="view" element={<DoctorProfileView />} />
         </Route>
 
-        {/* Admin routes */}
+        {/* Doctor profile creation */}
         <Route
-          path="/admin/*"
+          path="/doctor/create"
           element={
-            <RequireRole requiredRole="admin" currentRole={role}>
-              <AdminPanelShell />
+            <RequireRole requiredRole="doctor" currentRole={role}>
+              {!hasDoctorProfile ? (
+                <DoctorCreate setHasDoctorProfile={setHasDoctorProfile} />
+              ) : (
+                <DoctorDashboard />
+              )}
             </RequireRole>
           }
-        >
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="doctors" element={<AdminDoctors />} />
-          <Route path="appointments" element={<AdminAppointments />} />
-        </Route>
+        />
+
+        {/* Clerk auth routes */}
+        <Route
+          path="/sign-in"
+          element={
+            <div className="flex items-center justify-center min-h-screen bg-white">
+              <SignIn
+                appearance={{
+                  elements: {
+                    card: "shadow-lg border border-purple-200 rounded-lg",
+                    headerTitle: "text-purple-700 font-bold",
+                    headerSubtitle: "text-gray-600",
+                    socialButtonsBlockButton:
+                      "bg-purple-600 text-white hover:bg-purple-700",
+                    formButtonPrimary:
+                      "bg-purple-600 text-white hover:bg-purple-700",
+                    formFieldLabel: "text-purple-700 font-medium",
+                    footerActionLink: "text-purple-600 hover:underline",
+                  },
+                }}
+              />
+            </div>
+          }
+        />
+        <Route
+          path="/sign-up"
+          element={
+            <div className="flex items-center justify-center min-h-screen bg-white">
+              <SignUp
+                appearance={{
+                  elements: {
+                    card: "shadow-lg border border-purple-200 rounded-lg",
+                    headerTitle: "text-purple-700 font-bold",
+                    headerSubtitle: "text-gray-600",
+                    socialButtonsBlockButton:
+                      "bg-purple-600 text-white hover:bg-purple-700",
+                    formButtonPrimary:
+                      "bg-purple-600 text-white hover:bg-purple-700",
+                    formFieldLabel: "text-purple-700 font-medium",
+                    footerActionLink: "text-purple-600 hover:underline",
+                  },
+                }}
+              />
+            </div>
+          }
+        />
       </Routes>
     </div>
   );

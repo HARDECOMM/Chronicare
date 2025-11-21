@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/doctor/card";
 
 export function StatsCard({ title, value, color = "text-purple-700" }) {
   return (

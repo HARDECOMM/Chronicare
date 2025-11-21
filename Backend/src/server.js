@@ -1,53 +1,49 @@
+// Backend/src/server.js
+
 // ✅ Import core packages
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-// ✅ Load environment variables from .env file
+// ✅ Load environment variables
 dotenv.config();
 
-// ✅ Log Clerk keys to verify they're loaded (remove after testing)
-console.log('CLERK_PUBLISHABLE_KEY:', process.env.CLERK_PUBLISHABLE_KEY);
-console.log('CLERK_SECRET_KEY:', process.env.CLERK_SECRET_KEY);
-
-// ✅ Import Clerk middleware for backend authentication
+// ✅ Clerk middleware
 const { clerkMiddleware } = require('@clerk/express');
 
 // ✅ Import route modules
-const userRoutes = require('../routes/userRoutes');
+const usersRouter = require('../routes/usersRoutes');
+const patientRoutes = require('../routes/patientRoutes');
 const doctorRoutes = require('../routes/doctorRoutes');
 const appointmentRoutes = require('../routes/appointmentRoutes');
 
 // ✅ Initialize Express app
 const app = express();
 
-// ✅ Parse incoming JSON requests
+// ✅ Middleware
 app.use(express.json());
-
-// ✅ Enable CORS for frontend access
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite default dev server
+  origin: true, // adjust for your frontend
   credentials: true
 }));
-
-// ✅ Inject Clerk authentication into every request
 app.use(clerkMiddleware());
 
-// ✅ Define the port to run the server on
+// ✅ Port
 const PORT = process.env.PORT || 5000;
 
-// ✅ Root route for testing the server
+// ✅ Root route
 app.get('/', (req, res) => {
   res.send('🚀 Root Server running...');
 });
 
-// ✅ Mount API routes
-app.use('/api/users', userRoutes);
+// ✅ Mount API routes (Option A consistency: all under /api)
+app.use('/api/users', usersRouter);
+app.use('/api/patients', patientRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 
-// ✅ Connect to MongoDB and start the server
+// ✅ Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connected');

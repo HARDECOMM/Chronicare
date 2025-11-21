@@ -1,10 +1,11 @@
 {
-    "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["./src/*"]
-        },
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
     },
-    "include": ["src/**/*", "tailwind.config.js", "tailwind.config.js"],
-    "exclude": ["node_modules", "build", "dist"]
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*", "tailwind.config.js"],
+  "exclude": ["node_modules", "build", "dist"]
 }

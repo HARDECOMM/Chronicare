@@ -1,46 +1,48 @@
-import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { FormField } from "@/components/ui/shared/FormField";
+// src/pages/patient/PatientProfileEditor.jsx
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import { patientsAPI } from "../../api/patientAPI";
+import { toast } from "react-hot-toast";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { NotificationToast } from "@/components/ui/shared/NotificationToast";
 
 export function PatientProfileEditor() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    dateOfBirth: "",
-    gender: "",
-  });
-  const [showToast, setShowToast] = useState(false);
+  const { getToken } = useAuth();
+  const [profile, setProfile] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await patientsAPI.getMyProfile(token);
+        if (res) setProfile(res);
+      } catch {
+        toast.error("Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [getToken]);
 
-  const handleSave = () => {
-    console.log("Saving profile:", form);
-    setShowToast(true);
+  const handleSave = async () => {
+    try {
+      const token = await getToken();
+      const updated = await patientsAPI.updateMyProfile(profile, token);
+      setProfile(updated);
+      toast.success("Profile updated");
+    } catch {
+      toast.error("Failed to update profile");
+    }
   };
 
+  if (loading) return <p>Loading...</p>;
+
   return (
-    <Card className="max-w-lg mx-auto">
-      <CardHeader>
-        <CardTitle className="text-purple-700">Edit Profile</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <FormField label="Name" name="name" value={form.name} onChange={handleChange} />
-        <FormField label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
-        <FormField label="Date of Birth" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleChange} />
-        <FormField label="Gender" name="gender" type="select" value={form.gender} onChange={handleChange} options={["Male", "Female", "Other"]} />
-        <Button className="bg-purple-600 text-white hover:bg-purple-700" onClick={handleSave}>
-          Save Changes
-        </Button>
-      </CardContent>
-      {showToast && (
-        <NotificationToast
-          title="Profile Updated"
-          description="Your profile changes have been saved successfully."
-          variant="success"
-        />
-      )}
-    </Card>
+    <div className="space-y-4">
+      <Input value={profile.name || ""} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
+      <Input value={profile.phone || ""} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
+      <Button onClick={handleSave}>Save</Button>
+    </div>
   );
 }

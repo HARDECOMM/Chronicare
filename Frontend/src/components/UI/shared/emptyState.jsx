@@ -1,5 +1,5 @@
 // components/ui/shared/EmptyState.jsx
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/doctor/button";
 
 export function EmptyState({ title, description, action }) {
   return (

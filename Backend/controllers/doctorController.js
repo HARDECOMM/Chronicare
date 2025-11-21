@@ -1,186 +1,92 @@
-// controllers/doctorController.js
-const mongoose = require('mongoose');
+// src/controllers/doctors.controller.js
+const Doctor = require("../models/doctor");
+const Appointment = require("../models/appointment");
 
-// Flexible model imports (support named or default exports)
-let Doctor;
-let Appointment;
-try {
-  const docMod = require('../models/doctor');
-  Doctor = docMod.Doctor || docMod.default || docMod;
-} catch (e) {
-  console.error('Failed to require Doctor model:', e);
-  throw e;
-}
-
-try {
-  const apptMod = require('../models/appointment');
-  Appointment = apptMod.Appointment || apptMod.default || apptMod;
-} catch (e) {
-  console.error('Failed to require Appointment model:', e);
-  throw e;
-}
-
-function isValidObjectId(id) {
-  return mongoose.Types.ObjectId.isValid(String(id));
-}
-
-function getAuthInfo(req) {
-  return typeof req.auth === 'function' ? req.auth() : req.user || {};
-}
-
-// READ ALL DOCTORS
-exports.getDoctors = async (req, res) => {
-  try {
-    const doctors = await Doctor.find().lean();
-    return res.status(200).json(doctors);
-  } catch (err) {
-    console.error('Error fetching doctors:', err);
-    return res.status(500).json({ error: 'Server error', details: err.message });
-  }
-};
-
-// READ DOCTOR BY ID
-exports.getDoctorById = async (req, res) => {
-  const { id } = req.params;
-
-  if (!id) return res.status(400).json({ error: 'Missing doctor id' });
-  if (!isValidObjectId(id)) return res.status(400).json({ error: 'Invalid doctor id format' });
+// src/controllers/doctors.controller.js
+exports.createDoctor = async (req, res) => {
+  const { clerkId } = req;
+  const exists = await Doctor.findOne({ clerkId });
+  if (exists) return res.status(400).json({ error: "Doctor profile already exists" });
 
   try {
-    const doctor = await Doctor.findById(id).lean();
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
-    return res.status(200).json(doctor);
-  } catch (err) {
-    console.error('Error fetching doctor by ID:', err);
-    return res.status(500).json({ error: 'Failed to fetch doctor', details: err.message });
-  }
-};
-
-// READ DOCTOR BY CLERK ID (auto-create if missing)
-exports.getDoctorByClerkId = async (req, res) => {
-  try {
-    const authInfo = getAuthInfo(req);
-    const clerkId = authInfo.userId || authInfo.clerkId || authInfo.id;
-
-    if (!clerkId) return res.status(401).json({ error: 'Unauthorized: missing clerk id' });
-
-    let doctor = await Doctor.findOne({ clerkId }).lean();
-
-    if (!doctor) {
-      const newDoc = new Doctor({
-        clerkId,
-        name: 'New Doctor',
-        specialty: 'General',
-        location: '',
-        bio: '',
-        available: false,
-      });
-      await newDoc.save();
-      doctor = newDoc.toObject();
-      console.log('🆕 Auto-created doctor profile:', doctor._id);
+    // Ensure name is provided
+    if (!req.body.name) {
+      return res.status(400).json({ error: "Name is required" });
     }
 
-    return res.status(200).json(doctor);
-  } catch (err) {
-    console.error('Error fetching doctor by Clerk ID:', err);
-    return res.status(500).json({ error: 'Failed to fetch doctor profile', details: err.message });
-  }
-};
-
-// CREATE DOCTOR PROFILE
-exports.createDoctor = async (req, res) => {
-  try {
-    const authInfo = getAuthInfo(req);
-    const clerkId = authInfo.userId || authInfo.clerkId || authInfo.id;
-    if (!clerkId) return res.status(401).json({ error: 'Unauthorized: missing clerk id' });
-
-    const { name, specialty, location, bio } = req.body;
-    if (!name || !specialty) return res.status(400).json({ error: 'Missing required fields: name or specialty' });
-
-    const existing = await Doctor.findOne({ clerkId }).lean();
-    if (existing) return res.status(400).json({ error: 'Doctor profile already exists' });
-
-    const doctor = new Doctor({
-      name,
-      specialty,
-      location: location || '',
-      bio: bio || '',
+    const doc = await Doctor.create({
       clerkId,
+      name: req.body.name,
+      specialty: req.body.specialty,
+      licenseNumber: req.body.licenseNumber,
+      location: req.body.location,
+      yearsOfExperience: req.body.yearsOfExperience,
+      languagesSpoken: req.body.languagesSpoken,
+      bio: req.body.bio,
+      contactInfo: req.body.contactInfo,
+      profileImage: req.body.profileImage,
     });
 
-    await doctor.save();
-    return res.status(201).json(doctor);
+    res.status(201).json({ profile: doc });
   } catch (err) {
-    console.error('Error creating doctor profile:', err);
-    return res.status(500).json({ error: 'Failed to create doctor profile', details: err.message });
+    res.status(400).json({ error: err.message });
   }
 };
 
-// UPDATE DOCTOR PROFILE
-exports.updateDoctorProfile = async (req, res) => {
-  try {
-    const authInfo = getAuthInfo(req);
-    const clerkId = authInfo.userId || authInfo.clerkId || authInfo.id;
-    if (!clerkId) return res.status(401).json({ error: 'Unauthorized: missing clerk id' });
-
-    const updates = req.body;
-    const doctor = await Doctor.findOneAndUpdate({ clerkId }, updates, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!doctor) return res.status(404).json({ error: 'Doctor profile not found' });
-
-    return res.status(200).json(doctor);
-  } catch (err) {
-    console.error('Error updating doctor profile:', err);
-    return res.status(500).json({ error: 'Failed to update profile', details: err.message });
-  }
+exports.getMyProfile = async (req, res) => {
+  const { clerkId } = req;
+  const doc = await Doctor.findOne({ clerkId });
+  if (!doc) return res.status(404).json({ error: "Doctor not found" });
+  res.json({ profile: doc });
 };
 
-// GET APPOINTMENTS FOR A DOCTOR (by logged-in doctor)
-exports.getAppointmentsForDoctor = async (req, res) => {
-  try {
-    const authInfo = getAuthInfo(req);
-    const clerkId = authInfo.userId || authInfo.clerkId || authInfo.id;
-    if (!clerkId) return res.status(401).json({ error: 'Unauthorized: missing clerk id' });
-
-    const doctor = await Doctor.findOne({ clerkId }).select('_id').lean();
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
-
-    // populate patient/user field depending on your Appointment schema (userId or patientId)
-    const appointments = await Appointment.find({ doctorId: doctor._id }).populate('userId patientId');
-    return res.status(200).json(appointments);
-  } catch (err) {
-    console.error('Error fetching doctor appointments:', err);
-    return res.status(500).json({ error: 'Failed to fetch appointments', details: err.message });
-  }
+exports.updateMyProfile = async (req, res) => {
+  const { clerkId } = req;
+  const doc = await Doctor.findOneAndUpdate({ clerkId }, { $set: req.body }, { new: true });
+  if (!doc) return res.status(404).json({ error: "Doctor not found" });
+  res.json({ profile: doc });
 };
 
-// UPDATE APPOINTMENT STATUS (doctor endpoint)
-exports.updateAppointmentStatus = async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+exports.deleteMyProfile = async (req, res) => {
+  const { clerkId } = req;
+  const del = await Doctor.findOneAndDelete({ clerkId });
+  if (!del) return res.status(404).json({ error: "Doctor not found" });
+  res.json({ ok: true });
+};
 
-  if (!id) return res.status(400).json({ error: 'Missing appointment id' });
-  if (!isValidObjectId(id)) return res.status(400).json({ error: 'Invalid appointment id format' });
+exports.getProfileWithStats = async (req, res) => {
+  const { clerkId } = req;
+  const doc = await Doctor.findOne({ clerkId });
+  if (!doc) return res.status(404).json({ error: "Doctor not found" });
 
-  if (!['pending', 'confirmed', 'cancelled'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid status value' });
-  }
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
 
-  try {
-    const appointment = await Appointment.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true, runValidators: true }
-    );
+  const totalAppointments = await Appointment.countDocuments({ doctorClerkId: clerkId });
+  const appointmentsToday = await Appointment.countDocuments({
+    doctorClerkId: clerkId,
+    date: { $gte: todayStart, $lte: todayEnd },
+  });
+  const patientsServed = await Appointment.distinct("patientClerkId", {
+    doctorClerkId: clerkId,
+    status: "confirmed",
+  }).then((arr) => arr.length);
 
-    if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+  res.json({
+    doctor: doc,
+    stats: { totalAppointments, appointmentsToday, patientsServed },
+  });
+};
 
-    return res.status(200).json(appointment);
-  } catch (err) {
-    console.error('Error updating appointment status:', err);
-    return res.status(500).json({ error: 'Failed to update status', details: err.message });
-  }
+exports.getAppointments = async (req, res) => {
+  const { clerkId } = req;
+  const appts = await Appointment.find({ doctorClerkId: clerkId }).sort({ date: 1 });
+  res.json({ appointments: appts });
+};
+
+exports.listAll = async (req, res) => {
+  const docs = await Doctor.find().sort({ createdAt: -1 });
+  res.json({ doctors: docs });
 };

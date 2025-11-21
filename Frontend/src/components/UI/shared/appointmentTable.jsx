@@ -2,7 +2,7 @@ import {
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/doctor/button";
 
 export function AppointmentTable({ appointments, columns, actions }) {
   return (

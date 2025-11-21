@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/ui/doctor/card";
 
 export function LayoutShell({ sidebar, children }) {
   return (

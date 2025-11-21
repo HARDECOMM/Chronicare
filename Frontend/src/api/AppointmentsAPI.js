@@ -2,13 +2,10 @@
 import { httpClient } from "./httpClient";
 
 export const appointmentsAPI = {
-  // Doctor side
-  getDoctorAppointments: (token) => httpClient.get("/doctors/appointments", token),
-  updateStatus: (id, status, token) =>
-    httpClient.patch(`/doctors/appointments/${id}/status`, { status }, token),
-
-  // Patient side
-  createAppointment: (payload, token) => httpClient.post("/appointments", payload, token),
-  getMyAppointments: (token) => httpClient.get("/appointments/mine", token),
-  cancelAppointment: (id, token) => httpClient.del(`/appointments/${id}`, token),
+  book: (body, token) => httpClient.post("/api/appointments", body, token),
+  listForPatient: (token) => httpClient.get("/api/appointments/patient", token),
+  listForDoctor: (token) => httpClient.get("/api/appointments/doctor", token),
+  confirm: (id, token) => httpClient.post(`/api/appointments/${id}/confirm`, {}, token),
+  cancel: (id, token) => httpClient.post(`/api/appointments/${id}/cancel`, {}, token),
+  addNote: (id, body, token) => httpClient.post(`/api/appointments/${id}/notes`, body, token),
 };

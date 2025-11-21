@@ -1,14 +1,24 @@
-const mongoose = require('mongoose');
+// src/models/Doctor.js
+const mongoose = require("mongoose");
 
-const doctorSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  specialty: { type: String, required: true },
-  rating: { type: Number, default: 0 },
-  location: { type: String },
-  available: { type: Boolean, default: true },
-  bio: { type: String },
-});
+const DoctorSchema = new mongoose.Schema(
+  {
+    clerkId: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
+    specialty: { type: String },
+    licenseNumber: { type: String },
+    location: { type: String },
+    yearsOfExperience: { type: Number, default: 0 },
+    languagesSpoken: { type: [String], default: [] },
+    bio: { type: String },
+    contactInfo: {
+      phone: String,
+      email: String,
+      address: String,
+    },
+    profileImage: { type: String },
+  },
+  { timestamps: true }
+);
 
-const Doctor = mongoose.model('Doctor', doctorSchema);
-
-module.exports = {Doctor};
+module.exports = mongoose.model("Doctor", DoctorSchema);

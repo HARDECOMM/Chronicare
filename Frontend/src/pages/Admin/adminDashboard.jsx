@@ -1,14 +1,19 @@
-import { StatsCard } from "@/components/ui/statsCard";
-
+// src/pages/admin/AdminDashboard.jsx
 export function AdminDashboard() {
-  const stats = { users: 120, doctors: 25, patients: 95, appointments: 40 };
+  return <h2 className="text-purple-700 text-xl">Admin Dashboard</h2>;
+}
 
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      <StatsCard title="Users" value={stats.users} />
-      <StatsCard title="Doctors" value={stats.doctors} />
-      <StatsCard title="Patients" value={stats.patients} />
-      <StatsCard title="Appointments" value={stats.appointments} />
-    </div>
-  );
+// src/pages/admin/AdminUsers.jsx
+export function AdminUsers() {
+  return <h2 className="text-purple-700 text-xl">Manage Users</h2>;
+}
+
+// src/pages/admin/AdminDoctors.jsx
+export function AdminDoctors() {
+  return <h2 className="text-purple-700 text-xl">Manage Doctors</h2>;
+}
+
+// src/pages/admin/AdminAppointments.jsx
+export function AdminAppointments() {
+  return <h2 className="text-purple-700 text-xl">Manage Appointments</h2>;
 }

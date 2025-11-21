@@ -1,35 +1,30 @@
-const express = require('express');
+// Backend/src/routes/appointmentRoutes.js
+const express = require("express");
 const router = express.Router();
-const { requireAuth } = require('@clerk/express');
+const { clerkAuth } = require("../middleware/auth");
 const {
-  createAppointment,
-  getAppointments,
-  getAppointmentsForUser,
-  updateAppointmentStatus,
-  getAppointmentsByPatient,
-  getAppointmentsForDoctor,
-  deleteAppointment,
-} = require('../controllers/appointmentController');
+  create,
+  listForPatient,
+  listForDoctor,
+  confirm,
+  cancel,
+  addNote,
+} = require("../controllers/appointmentController");
 
-// ✅ Appointment creation
-router.post('/', requireAuth(), createAppointment);
+// All routes mounted under /api/appointments
 
-// ✅ Appointments for current user
-router.get('/mine', requireAuth(), getAppointmentsForUser);
+// Patient booking and management
+router.post("/", clerkAuth, create);                 // POST /api/appointments
+router.get("/patient", clerkAuth, listForPatient);   // GET /api/appointments/patient
 
-// ✅ All appointments for authenticated user (admin or patient)
-router.get('/', requireAuth(), getAppointments);
+// Doctor management
+router.get("/doctor", clerkAuth, listForDoctor);     // GET /api/appointments/doctor
+router.post("/:id/confirm", clerkAuth, confirm);     // POST /api/appointments/:id/confirm
+router.post("/:id/cancel", clerkAuth, cancel);       // POST /api/appointments/:id/cancel
+router.post("/:id/notes", clerkAuth, addNote);       // POST /api/appointments/:id/notes
 
-// ✅ Appointments for logged-in doctor
-router.get('/doctor', requireAuth(), getAppointmentsForDoctor);
-
-// ✅ Appointments by patient ID (admin view)
-router.get('/patient/:id', requireAuth(), getAppointmentsByPatient);
-
-// ✅ Update appointment status
-router.patch('/:id/status', requireAuth(), updateAppointmentStatus);
-
-// ✅ Delete appointment
-router.delete('/:id', requireAuth(), deleteAppointment);
+// Health check
+router.get("/ping", (req, res) => res.send("Appointment routes alive")); // GET /api/appointments/ping
 
 module.exports = router;
+console.log("✅ appointmentRoutes loaded");

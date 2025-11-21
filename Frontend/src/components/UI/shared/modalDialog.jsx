@@ -6,8 +6,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/doctor/dialog";
+import { Button } from "@/components/ui/doctor/button";
 
 export function ModalDialog({
   open,

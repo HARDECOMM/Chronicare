@@ -1,37 +1,55 @@
 // src/api/httpClient.js
-const BASE_URL = import.meta.env.VITE_API_URL;  // ✅ use your env var
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-function buildHeaders(token, extra = {}) {
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...extra,
-  };
-}
-
-async function handleResponse(res) {
-  const data = await res.json().catch(() => null);
+async function handle(res, method, path) {
   if (!res.ok) {
-    const error = new Error(data?.error || `Request failed with status ${res.status}`);
-    error.status = res.status;
-    throw error;
+    const text = await res.text().catch(() => "");
+    let message = `${method} ${path} failed: ${res.status}`;
+    try {
+      const json = JSON.parse(text);
+      if (json?.error) message = json.error;
+    } catch {}
+    throw new Error(message);
   }
-  return data;
+
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return res.json();
+  }
+  // fallback: return raw text so caller can decide what to do
+  return { raw: await res.text() };
 }
 
 export const httpClient = {
-  get: (path, token) =>
-    fetch(`${BASE_URL}${path}`, { headers: buildHeaders(token) }).then(handleResponse),
-  post: (path, body, token) =>
-    fetch(`${BASE_URL}${path}`, {
+  get: async (path, token) => {
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    return handle(res, "GET", path);
+  },
+  post: async (path, body, token) => {
+    const res = await fetch(`${API_BASE}${path}`, {
       method: "POST",
-      headers: buildHeaders(token),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
-    }).then(handleResponse),
-  patch: (path, body, token) =>
-    fetch(`${BASE_URL}${path}`, {
+    });
+    return handle(res, "POST", path);
+  },
+  patch: async (path, body, token) => {
+    const res = await fetch(`${API_BASE}${path}`, {
       method: "PATCH",
-      headers: buildHeaders(token),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(body),
-    }).then(handleResponse),
+    });
+    return handle(res, "PATCH", path);
+  },
 };

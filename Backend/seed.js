@@ -1,58 +1,108 @@
-// seedAppointments.js
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const { Appointment } = require('./models/appointment');
-const { Doctor } = require('./models/doctor');
+// Backend/seed.js
+require("dotenv").config();
+const mongoose = require("mongoose");
+const { User } = require("./models/user");
+const { Doctor } = require("./models/doctor");
+const { Patient } = require("./models/patient");
+const { Appointment } = require("./models/appointment");
 
-dotenv.config();
-mongoose.connect(process.env.MONGO_URI);
-
-// ✅ Use your actual Clerk user ID
-const clerkUserId = 'user_35I3IEccjoTAAHX75MCRWCdIsHP';
-
-async function seedAppointments() {
+async function seed() {
   try {
-    const doctors = await Doctor.find().limit(3);
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("✅ Connected to MongoDB");
 
-    if (doctors.length === 0) {
-      console.error('❌ No doctors found. Seed doctors first.');
-      return mongoose.disconnect();
-    }
+    // Clear existing data
+    await User.deleteMany({});
+    await Doctor.deleteMany({});
+    await Patient.deleteMany({});
+    await Appointment.deleteMany({});
 
-    const sampleAppointments = [
-      {
-        userId: clerkUserId,
-        doctorId: doctors[0]._id,
-        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-        type: 'virtual',
-        notes: 'Follow-up on blood pressure',
-        status: 'pending',
-      },
-      {
-        userId: clerkUserId,
-        doctorId: doctors[1]._id,
-        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-        type: 'in-person',
-        notes: 'Skin rash consultation',
-        status: 'confirmed',
-      },
-      {
-        userId: clerkUserId,
-        doctorId: doctors[2]._id,
-        date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-        type: 'virtual',
-        notes: 'Child wellness check',
-        status: 'cancelled',
-      },
-    ];
+    // Create sample users
+    const patientUser = await User.create({
+      clerkId: "patient123",
+      name: "Jane Doe",
+      email: "jane@example.com",
+      role: "patient",
+    });
 
-    await Appointment.insertMany(sampleAppointments);
-    console.log('✅ Clerk appointments seeded');
+    const doctorUser = await User.create({
+      clerkId: "doctor123",
+      name: "Dr. John Smith",
+      email: "john@example.com",
+      role: "doctor",
+    });
+
+    const adminUser = await User.create({
+      clerkId: "admin123",
+      name: "Admin User",
+      email: "admin@example.com",
+      role: "admin",
+    });
+
+    // Create sample patient profile with new schema fields
+    const patient = await Patient.create({
+      userId: patientUser._id,
+      dateOfBirth: new Date("1995-06-15"),
+      gender: "female",
+      contactInfo: {
+        phone: "08012345678",
+        address: "Lekki Phase 1, Lagos",
+      },
+      medicalHistory: ["Asthma", "Diabetes"],
+      allergies: ["Peanuts", "Dust"],
+      emergencyContact: {
+        name: "Michael Doe",
+        phone: "08098765432",
+        relation: "Brother",
+      },
+    });
+
+    // Create sample doctors
+    const doctor1 = await Doctor.create({
+      clerkId: "doctor123",
+      name: "Dr. John Smith",
+      specialty: "Cardiology",
+      licenseNumber: "LIC123",
+      location: "Lagos",
+      bio: "Experienced cardiologist with 10 years in practice.",
+      contactInfo: { phone: "08098765432", email: "john@example.com", address: "Victoria Island" },
+      yearsOfExperience: 10,
+      languagesSpoken: ["English", "Yoruba"],
+    });
+
+    const doctor2 = await Doctor.create({
+      clerkId: "doctor456",
+      name: "Dr. Mary Johnson",
+      specialty: "Dermatology",
+      licenseNumber: "LIC456",
+      location: "Abuja",
+      bio: "Dermatologist specializing in skin conditions.",
+      contactInfo: { phone: "08123456789", email: "mary@example.com", address: "Wuse II" },
+      yearsOfExperience: 8,
+      languagesSpoken: ["English", "Hausa"],
+    });
+
+    // models/appointment.js
+const appointmentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
+  date: { type: Date, required: true },
+  reason: { type: String },
+  status: {
+    type: String,
+    enum: ["pending", "confirmed", "completed", "cancelled"], // ✅ added "confirmed"
+    default: "pending",
+  },
+}, { timestamps: true });
+
+
+
+    console.log("✅ Seed data created successfully");
+    process.exit(0);
   } catch (err) {
-    console.error('❌ Seeding error:', err);
-  } finally {
-    mongoose.disconnect();
+    console.error("❌ Error seeding data:", err);
+    process.exit(1);
   }
 }
 
-seedAppointments();
+seed();

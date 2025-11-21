@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/doctor/button";
 
 export function ActionButton({ label, onClick, variant = "default", className }) {
   return (

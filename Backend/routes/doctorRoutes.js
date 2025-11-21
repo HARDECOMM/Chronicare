@@ -1,30 +1,36 @@
-const express = require('express');
+// Backend/src/routes/doctorRoutes.js
+const express = require("express");
 const router = express.Router();
-const { requireAuth } = require('@clerk/express');
+const { clerkAuth } = require("../middleware/auth");
 const {
-  getDoctors,
-  getDoctorById,
-  getDoctorByClerkId,
+  getMyProfile,
+  updateMyProfile,
+  deleteMyProfile,
+  getProfileWithStats,
+  getAppointments,
   createDoctor,
-  updateDoctorProfile,
-  getAppointmentsForDoctor,
-  updateAppointmentStatus,
-} = require('../controllers/doctorController');
+  listAll,
+} = require("../controllers/doctorController");
 
-router.get('/', requireAuth(), getDoctors);
+// All routes mounted under /api/doctors
 
-// Put fixed routes before the dynamic param
-router.get('/me', requireAuth(), getDoctorByClerkId); // logged-in doctor
+// Doctor self-service
+router.get("/me", clerkAuth, getMyProfile);           // GET /api/doctors/me
+router.patch("/me", clerkAuth, updateMyProfile);      // PATCH /api/doctors/me
+router.delete("/me", clerkAuth, deleteMyProfile);     // DELETE /api/doctors/me
 
-// Make profile public by removing requireAuth,
-// or keep requireAuth() if only authenticated users may view profiles
-router.get('/:id', /* requireAuth(), */ getDoctorById);
+// Doctor dashboard and appointments
+router.get("/", clerkAuth, getProfileWithStats);      // GET /api/doctors
+router.get("/appointments", clerkAuth, getAppointments); // GET /api/doctors/appointments
 
-router.post('/', requireAuth(), createDoctor);
-router.patch('/me', requireAuth(), updateDoctorProfile);
+// Doctor creation
+router.post("/", clerkAuth, createDoctor);            // POST /api/doctors
 
-// doctor appointments and status routes
-router.get('/appointments/doctor', requireAuth(), getAppointmentsForDoctor);
-router.patch('/appointments/:id/status', requireAuth(), updateAppointmentStatus);
+// Admin access
+router.get("/all", clerkAuth, listAll);               // GET /api/doctors/all
+
+// Health check
+router.get("/ping", (req, res) => res.send("Doctor routes alive")); // GET /api/doctors/ping
 
 module.exports = router;
+console.log("✅ doctorRoutes loaded");
