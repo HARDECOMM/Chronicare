@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import { doctorsAPI } from "@/api/doctorAPI";   // ✅ doctor profiles
-import { appointmentsAPI } from "@/api/appointmentAPI"; // ✅ unified appointments API
+import { doctorsAPI } from "@/api/doctorAPI";
+import { appointmentsAPI } from "@/api/appointmentAPI";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -21,7 +21,6 @@ export function BookAppointment() {
   });
   const [loading, setLoading] = useState(false);
 
-  // Load doctors
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -159,8 +158,36 @@ export function BookAppointment() {
               />
             )}
 
-            <Button type="submit" disabled={loading} className="w-full mt-4">
-              {loading ? "Booking..." : "Book Appointment"}
+            {/* Purple-themed Button */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className={`w-full mt-4 py-3 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition duration-200 ${
+                loading
+                  ? "bg-purple-300 text-white"
+                  : "bg-purple-600 hover:bg-purple-700 text-white shadow-md"
+              }`}
+            >
+              {loading ? (
+                "Booking..."
+              ) : (
+                <>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M5 13l4 4L19 7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Confirm & Book Appointment
+                </>
+              )}
             </Button>
           </form>
         </CardContent>

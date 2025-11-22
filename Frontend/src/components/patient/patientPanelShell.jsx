@@ -42,10 +42,10 @@ export function PatientPanelShell() {
               Appointments
             </NavLink>
 
-            {/* Book Appointment button — green default, purple on hover */}
+            {/* Book Appointment button — now green */}
             <NavLink
               to="/patient/appointments/book"
-              className="px-4 py-2 rounded text-sm font-medium bg-green-500 text-white hover:bg-purple-600 transition"
+              className="px-4 py-2 rounded text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition"
             >
               Book Appointment
             </NavLink>

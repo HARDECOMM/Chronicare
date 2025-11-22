@@ -31,11 +31,15 @@ export function PatientProfileView() {
   if (!profile) {
     return (
       <Card>
-        <CardHeader><CardTitle>No Profile Found</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>No Profile Found</CardTitle>
+        </CardHeader>
         <CardContent>
           <p className="text-gray-700">You don’t have a profile yet.</p>
           <Link to="/patient/create">
-            <Button className="bg-green-600 text-white mt-4">Create Profile</Button>
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white mt-4">
+              Create Profile
+            </Button>
           </Link>
         </CardContent>
       </Card>
@@ -44,7 +48,9 @@ export function PatientProfileView() {
 
   return (
     <Card>
-      <CardHeader><CardTitle>Your Patient Profile</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle>Your Patient Profile</CardTitle>
+      </CardHeader>
       <CardContent className="space-y-2">
         <p><strong>Name:</strong> {profile.name}</p>
         <p><strong>Age:</strong> {profile.age}</p>
@@ -54,13 +60,16 @@ export function PatientProfileView() {
         <p><strong>Address:</strong> {profile.contactInfo?.address || "Not provided"}</p>
         <p><strong>Medical History:</strong> {profile.medicalHistory?.join(", ") || "None"}</p>
         <p><strong>Allergies:</strong> {profile.allergies?.join(", ") || "None"}</p>
-        <p><strong>Emergency Contact:</strong> 
-          {profile.emergencyContact 
+        <p>
+          <strong>Emergency Contact:</strong>{" "}
+          {profile.emergencyContact
             ? `${profile.emergencyContact.name} (${profile.emergencyContact.relation}) — ${profile.emergencyContact.phone}`
             : "Not provided"}
         </p>
         <Link to="/patient/edit">
-          <Button className="bg-blue-600 text-white mt-4">Edit Profile</Button>
+          <Button className="bg-purple-600 hover:bg-purple-700 text-white mt-4">
+            Edit Profile
+          </Button>
         </Link>
       </CardContent>
     </Card>

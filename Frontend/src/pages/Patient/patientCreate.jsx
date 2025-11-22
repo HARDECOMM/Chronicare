@@ -55,6 +55,14 @@ export function PatientCreate({ setHasPatientProfile }) {
     try {
       const token = await getToken();
 
+      // ✅ Check if profile already exists
+      const existingProfile = await patientsAPI.getMyProfile(token);
+      if (existingProfile) {
+        toast.error("Patient profile already exists");
+        navigate("/patient/profile", { replace: true });
+        return;
+      }
+
       const payload = {
         name: form.name,
         age: form.age,
@@ -92,44 +100,13 @@ export function PatientCreate({ setHasPatientProfile }) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
-            <Input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              required
-            />
+            <Input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" required />
+            <Input type="number" name="age" value={form.age} onChange={handleChange} placeholder="Age" required />
+            <Input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} placeholder="Date of Birth" />
 
-            {/* Age */}
-            <Input
-              type="number"
-              name="age"
-              value={form.age}
-              onChange={handleChange}
-              placeholder="Age"
-              required
-            />
-
-            {/* Date of Birth */}
-            <Input
-              type="date"
-              name="dateOfBirth"
-              value={form.dateOfBirth}
-              onChange={handleChange}
-              placeholder="Date of Birth"
-            />
-
-            {/* Gender Dropdown */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Gender</label>
-              <select
-                name="gender"
-                value={form.gender}
-                onChange={handleChange}
-                className="border rounded p-2"
-                required
-              >
+              <select name="gender" value={form.gender} onChange={handleChange} className="border rounded p-2" required>
                 <option value="">Select Gender</option>
                 {genderOptions.map((g) => (
                   <option key={g} value={g}>{g}</option>
@@ -137,24 +114,9 @@ export function PatientCreate({ setHasPatientProfile }) {
               </select>
             </div>
 
-            {/* Phone */}
-            <Input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-              required
-            />
+            <Input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone Number" required />
+            <Input name="address" value={form.address} onChange={handleChange} placeholder="Home Address" />
 
-            {/* Address */}
-            <Input
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="Home Address"
-            />
-
-            {/* Chronic Conditions Multi-Select Chips */}
             <div>
               <label className="block font-medium mb-1">Primary Chronic Condition(s)</label>
               <div className="flex flex-wrap gap-2">
@@ -164,9 +126,7 @@ export function PatientCreate({ setHasPatientProfile }) {
                     key={c}
                     onClick={() => handleMultiSelect("medicalHistory", c)}
                     className={`px-3 py-1 rounded-full border ${
-                      form.medicalHistory.includes(c)
-                        ? "bg-purple-600 text-white"
-                        : "bg-gray-100"
+                      form.medicalHistory.includes(c) ? "bg-purple-600 text-white" : "bg-gray-100"
                     }`}
                   >
                     {c}
@@ -175,7 +135,6 @@ export function PatientCreate({ setHasPatientProfile }) {
               </div>
             </div>
 
-            {/* Allergies Multi-Select Chips */}
             <div>
               <label className="block font-medium mb-1">Allergies</label>
               <div className="flex flex-wrap gap-2">
@@ -185,9 +144,7 @@ export function PatientCreate({ setHasPatientProfile }) {
                     key={a}
                     onClick={() => handleMultiSelect("allergies", a)}
                     className={`px-3 py-1 rounded-full border ${
-                      form.allergies.includes(a)
-                        ? "bg-red-600 text-white"
-                        : "bg-gray-100"
+                      form.allergies.includes(a) ? "bg-red-600 text-white" : "bg-gray-100"
                     }`}
                   >
                     {a}
@@ -196,32 +153,12 @@ export function PatientCreate({ setHasPatientProfile }) {
               </div>
             </div>
 
-            {/* Emergency Contact */}
-            <Input
-              name="emergencyContactName"
-              value={form.emergencyContactName}
-              onChange={handleChange}
-              placeholder="Emergency Contact Name"
-              required
-            />
-            <Input
-              name="emergencyContactPhone"
-              value={form.emergencyContactPhone}
-              onChange={handleChange}
-              placeholder="Emergency Contact Phone"
-              required
-            />
+            <Input name="emergencyContactName" value={form.emergencyContactName} onChange={handleChange} placeholder="Emergency Contact Name" required />
+            <Input name="emergencyContactPhone" value={form.emergencyContactPhone} onChange={handleChange} placeholder="Emergency Contact Phone" required />
 
-            {/* Relation Dropdown */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Emergency Contact Relation</label>
-              <select
-                name="emergencyContactRelation"
-                value={form.emergencyContactRelation}
-                onChange={handleChange}
-                className="border rounded p-2"
-                required
-              >
+              <select name="emergencyContactRelation" value={form.emergencyContactRelation} onChange={handleChange} className="border rounded p-2" required>
                 <option value="">Select Relation</option>
                 {emergencyRelations.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -229,7 +166,12 @@ export function PatientCreate({ setHasPatientProfile }) {
               </select>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full mt-4">
+            {/* ✅ Purple Create Profile Button */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
+            >
               {loading ? "Creating profile..." : "Create Profile"}
             </Button>
           </form>
