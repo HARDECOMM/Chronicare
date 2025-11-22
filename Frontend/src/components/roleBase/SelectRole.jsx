@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useUser, useAuth } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import { usersAPI } from "../../api/usersAPI";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/doctor/button";
@@ -7,18 +8,28 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/doctor
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const roles = [
-  { key: "patient", icon: "👤", description: "Book appointments and manage your health profile." },
-  { key: "doctor", icon: "🩺", description: "Manage patients and appointments." },
+  {
+    key: "patient",
+    icon: "👤",
+    description: "Book appointments and manage your health profile.",
+  },
+  {
+    key: "doctor",
+    icon: "🩺",
+    description: "Manage patients and appointments.",
+  },
 ];
 
 export function SelectRole({ setRole }) {
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
+  const navigate = useNavigate();
+
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  // Initial check: sync user and fetch existing role
+  // 🔍 Check if role already exists
   useEffect(() => {
     if (!isLoaded || !user) return;
     let mounted = true;
@@ -33,7 +44,13 @@ export function SelectRole({ setRole }) {
         if (!mounted) return;
         if (existingRole) {
           setRole(existingRole);
-          // Redirect handled in App.jsx
+          toast.success(`Role already set: ${existingRole}`);
+          // ✅ Redirect based on existing role
+          if (existingRole === "doctor") {
+            navigate("/doctor", { replace: true });
+          } else if (existingRole === "patient") {
+            navigate("/patient", { replace: true });
+          }
         }
       } catch (err) {
         console.warn("SelectRole init check failed:", err);
@@ -42,16 +59,10 @@ export function SelectRole({ setRole }) {
       }
     })();
 
-    return () => { mounted = false; };
-  }, [isLoaded, user, getToken]);
-
-  if (checking) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-white">
-        <p className="text-purple-600 text-lg font-semibold">Checking account…</p>
-      </div>
-    );
-  }
+    return () => {
+      mounted = false;
+    };
+  }, [isLoaded, user, getToken, navigate, setRole]);
 
   const handleSubmit = async () => {
     if (!selectedRole) return toast.error("Please select a role");
@@ -65,7 +76,13 @@ export function SelectRole({ setRole }) {
 
       setRole(role);
       toast.success(`Role set to ${selectedRole}`);
-      // Redirect handled centrally in App.jsx
+
+      // ✅ Redirect to profile creation
+      if (role === "doctor") {
+        navigate("/doctor/create", { replace: true });
+      } else if (role === "patient") {
+        navigate("/patient/create", { replace: true });
+      }
     } catch (err) {
       console.error("❌ Role update failed:", err);
       toast.error("Failed to set role");
@@ -73,6 +90,14 @@ export function SelectRole({ setRole }) {
       setLoading(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-white">
+        <p className="text-purple-600 text-lg font-semibold">Checking account…</p>
+      </div>
+    );
+  }
 
   return (
     <Card className="max-w-md mx-auto mt-20">

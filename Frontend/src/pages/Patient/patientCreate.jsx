@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import { patientsAPI } from "../../api/patientAPI";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
 
 // Predefined options
 const genderOptions = ["male", "female", "other"];
@@ -13,7 +13,7 @@ const chronicConditions = ["Diabetes", "Hypertension", "Asthma", "Heart Disease"
 const allergyOptions = ["Penicillin", "Peanuts", "Shellfish", "Dust", "None"];
 const emergencyRelations = ["Parent", "Sibling", "Spouse", "Friend", "Guardian"];
 
-export function PatientProfileEditor() {
+export function PatientCreate({ setHasPatientProfile }) {
   const { getToken } = useAuth();
   const navigate = useNavigate();
 
@@ -30,36 +30,8 @@ export function PatientProfileEditor() {
     emergencyContactPhone: "",
     emergencyContactRelation: "",
   });
-  const [loading, setLoading] = useState(false);
 
-  // Load existing profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = await getToken();
-        const profile = await patientsAPI.getMyProfile(token);
-        if (profile) {
-          setForm({
-            name: profile.name || "",
-            age: profile.age || "",
-            dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.split("T")[0] : "",
-            gender: profile.gender || "",
-            phone: profile.contactInfo?.phone || "",
-            address: profile.contactInfo?.address || "",
-            medicalHistory: profile.medicalHistory || [],
-            allergies: profile.allergies || [],
-            emergencyContactName: profile.emergencyContact?.name || "",
-            emergencyContactPhone: profile.emergencyContact?.phone || "",
-            emergencyContactRelation: profile.emergencyContact?.relation || "",
-          });
-        }
-      } catch (err) {
-        console.error("❌ Failed to load patient profile:", err);
-        toast.error("Failed to load profile");
-      }
-    };
-    fetchProfile();
-  }, [getToken]);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -82,6 +54,7 @@ export function PatientProfileEditor() {
     setLoading(true);
     try {
       const token = await getToken();
+
       const payload = {
         name: form.name,
         age: form.age,
@@ -96,12 +69,16 @@ export function PatientProfileEditor() {
           relation: form.emergencyContactRelation,
         },
       };
-      await patientsAPI.updateMyProfile(payload, token);
-      toast.success("Profile updated successfully!");
-      navigate("/patient/profile"); // ✅ redirect to patient profile view
+
+      await patientsAPI.createProfile(payload, token);
+
+      if (setHasPatientProfile) setHasPatientProfile(true);
+
+      toast.success("Patient profile created successfully!");
+      navigate("/patient", { replace: true });
     } catch (err) {
-      console.error("❌ Failed to update patient profile:", err);
-      toast.error("Failed to update profile");
+      console.error("❌ Failed to create patient profile:", err);
+      toast.error("Failed to create profile");
     } finally {
       setLoading(false);
     }
@@ -111,18 +88,48 @@ export function PatientProfileEditor() {
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="max-w-lg w-full">
         <CardHeader>
-          <CardTitle className="text-purple-700">Edit Your Patient Profile</CardTitle>
+          <CardTitle className="text-purple-700">Create Your Patient Profile</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" required />
-            <Input type="number" name="age" value={form.age} onChange={handleChange} placeholder="Age" required />
-            <Input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} placeholder="Date of Birth" />
+            {/* Name */}
+            <Input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="Full Name"
+              required
+            />
+
+            {/* Age */}
+            <Input
+              type="number"
+              name="age"
+              value={form.age}
+              onChange={handleChange}
+              placeholder="Age"
+              required
+            />
+
+            {/* Date of Birth */}
+            <Input
+              type="date"
+              name="dateOfBirth"
+              value={form.dateOfBirth}
+              onChange={handleChange}
+              placeholder="Date of Birth"
+            />
 
             {/* Gender Dropdown */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Gender</label>
-              <select name="gender" value={form.gender} onChange={handleChange} className="border rounded p-2" required>
+              <select
+                name="gender"
+                value={form.gender}
+                onChange={handleChange}
+                className="border rounded p-2"
+                required
+              >
                 <option value="">Select Gender</option>
                 {genderOptions.map((g) => (
                   <option key={g} value={g}>{g}</option>
@@ -130,8 +137,22 @@ export function PatientProfileEditor() {
               </select>
             </div>
 
-            <Input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone Number" required />
-            <Input name="address" value={form.address} onChange={handleChange} placeholder="Home Address" />
+            {/* Phone */}
+            <Input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              placeholder="Phone Number"
+              required
+            />
+
+            {/* Address */}
+            <Input
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="Home Address"
+            />
 
             {/* Chronic Conditions Multi-Select Chips */}
             <div>
@@ -143,7 +164,9 @@ export function PatientProfileEditor() {
                     key={c}
                     onClick={() => handleMultiSelect("medicalHistory", c)}
                     className={`px-3 py-1 rounded-full border ${
-                      form.medicalHistory.includes(c) ? "bg-purple-600 text-white" : "bg-gray-100"
+                      form.medicalHistory.includes(c)
+                        ? "bg-purple-600 text-white"
+                        : "bg-gray-100"
                     }`}
                   >
                     {c}
@@ -162,7 +185,9 @@ export function PatientProfileEditor() {
                     key={a}
                     onClick={() => handleMultiSelect("allergies", a)}
                     className={`px-3 py-1 rounded-full border ${
-                      form.allergies.includes(a) ? "bg-red-600 text-white" : "bg-gray-100"
+                      form.allergies.includes(a)
+                        ? "bg-red-600 text-white"
+                        : "bg-gray-100"
                     }`}
                   >
                     {a}
@@ -172,13 +197,31 @@ export function PatientProfileEditor() {
             </div>
 
             {/* Emergency Contact */}
-            <Input name="emergencyContactName" value={form.emergencyContactName} onChange={handleChange} placeholder="Emergency Contact Name" required />
-            <Input name="emergencyContactPhone" value={form.emergencyContactPhone} onChange={handleChange} placeholder="Emergency Contact Phone" required />
+            <Input
+              name="emergencyContactName"
+              value={form.emergencyContactName}
+              onChange={handleChange}
+              placeholder="Emergency Contact Name"
+              required
+            />
+            <Input
+              name="emergencyContactPhone"
+              value={form.emergencyContactPhone}
+              onChange={handleChange}
+              placeholder="Emergency Contact Phone"
+              required
+            />
 
             {/* Relation Dropdown */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Emergency Contact Relation</label>
-              <select name="emergencyContactRelation" value={form.emergencyContactRelation} onChange={handleChange} className="border rounded p-2" required>
+              <select
+                name="emergencyContactRelation"
+                value={form.emergencyContactRelation}
+                onChange={handleChange}
+                className="border rounded p-2"
+                required
+              >
                 <option value="">Select Relation</option>
                 {emergencyRelations.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -186,19 +229,9 @@ export function PatientProfileEditor() {
               </select>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={loading} className="bg-purple-600 text-white">
-                {loading ? "Updating profile..." : "Save Changes"}
-              </Button>
-              <Button
-                type="button"
-                className="bg-gray-500 text-white"
-                onClick={() => navigate("/patient")}
-              >
-                Back to Dashboard
-              </Button>
-            </div>
+            <Button type="submit" disabled={loading} className="w-full mt-4">
+              {loading ? "Creating profile..." : "Create Profile"}
+            </Button>
           </form>
         </CardContent>
       </Card>

@@ -1,4 +1,4 @@
-// Backend/src/routes/appointmentRoutes.js
+// src/routes/appointmentRoutes.js
 const express = require("express");
 const router = express.Router();
 const { clerkAuth } = require("../middleware/auth");
@@ -11,20 +11,30 @@ const {
   addNote,
 } = require("../controllers/appointmentController");
 
-// All routes mounted under /api/appointments
+// Patient books appointment
+// POST /api/appointments
+router.post("/", clerkAuth, create);
 
-// Patient booking and management
-router.post("/", clerkAuth, create);                 // POST /api/appointments
-router.get("/patient", clerkAuth, listForPatient);   // GET /api/appointments/patient
+// Patient lists own appointments
+// GET /api/appointments/patient
+router.get("/patient", clerkAuth, listForPatient);
 
-// Doctor management
-router.get("/doctor", clerkAuth, listForDoctor);     // GET /api/appointments/doctor
-router.post("/:id/confirm", clerkAuth, confirm);     // POST /api/appointments/:id/confirm
-router.post("/:id/cancel", clerkAuth, cancel);       // POST /api/appointments/:id/cancel
-router.post("/:id/notes", clerkAuth, addNote);       // POST /api/appointments/:id/notes
+// Doctor lists own appointments
+// GET /api/appointments/doctor
+router.get("/doctor", clerkAuth, listForDoctor);
 
-// Health check
-router.get("/ping", (req, res) => res.send("Appointment routes alive")); // GET /api/appointments/ping
+// Doctor confirms appointment
+// PATCH /api/appointments/:id/status/confirm
+router.patch("/:id/status/confirm", clerkAuth, confirm);
+
+// Doctor cancels appointment
+// PATCH /api/appointments/:id/status/cancel
+router.patch("/:id/status/cancel", clerkAuth, cancel);
+
+// Add note (doctor or patient)
+// PATCH /api/appointments/:id/notes
+router.patch("/:id/notes", clerkAuth, addNote);
 
 module.exports = router;
+
 console.log("✅ appointmentRoutes loaded");

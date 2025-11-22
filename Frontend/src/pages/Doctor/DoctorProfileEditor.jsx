@@ -1,36 +1,19 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
-import { doctorsAPI } from "../../api/doctorsAPI";
+import { doctorsAPI } from "@/api/doctorAPI";
 import { toast } from "react-hot-toast";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 export function DoctorProfileEditor() {
   const { getToken } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    name: "",
-    specialty: "",
-    licenseNumber: "",
-    location: "",
-    yearsOfExperience: 0,
-    languagesSpoken: "",
-    bio: "",
-    contactInfo: {
-      phone: "",
-      email: "",
-      address: "",
-    },
-    profileImage: "",
-  });
-
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
-  // Load existing profile
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -38,103 +21,87 @@ export function DoctorProfileEditor() {
         const token = await getToken();
         const res = await doctorsAPI.getMyProfile(token);
         if (mounted && res?.profile) {
-          const doc = res.profile;
-          setForm({
-            name: doc.name || "",
-            specialty: doc.specialty || "",
-            licenseNumber: doc.licenseNumber || "",
-            location: doc.location || "",
-            yearsOfExperience: doc.yearsOfExperience || 0,
-            languagesSpoken: doc.languagesSpoken?.join(", ") || "",
-            bio: doc.bio || "",
-            contactInfo: {
-              phone: doc.contactInfo?.phone || "",
-              email: doc.contactInfo?.email || "",
-              address: doc.contactInfo?.address || "",
-            },
-            profileImage: doc.profileImage || "",
-          });
+          setProfile(res.profile);
         }
       } catch (err) {
-        console.error("❌ Failed to load profile:", err);
-        toast.error("Could not load profile");
+        console.error("❌ Failed to load doctor profile:", err);
+        toast.error("Could not load profile for editing");
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false };
   }, [getToken]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (["phone", "email", "address"].includes(name)) {
-      setForm({ ...form, contactInfo: { ...form.contactInfo, [name]: value } });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
-  };
-
   const handleSave = async () => {
-    setSaving(true);
     try {
       const token = await getToken();
-      const payload = {
-        ...form,
-        languagesSpoken: form.languagesSpoken
-          ? form.languagesSpoken.split(",").map((lang) => lang.trim())
-          : [],
-      };
-      await doctorsAPI.updateMyProfile(payload, token);
-      toast.success("Profile updated successfully!");
-
-      // ✅ Redirect to view profile after save
-      navigate("/doctor/view");
+      await doctorsAPI.updateMyProfile(token, profile);
+      toast.success("Profile updated successfully");
+      navigate("/doctor/view"); // ✅ redirect to profile view after save
     } catch (err) {
       console.error("❌ Failed to update profile:", err);
-      toast.error("Failed to save changes");
-    } finally {
-      setSaving(false);
+      toast.error("Could not update profile");
     }
   };
 
-  if (loading) {
-    return <p className="text-purple-600">Loading profile…</p>;
-  }
+  if (loading) return <p className="text-purple-600">Loading editor…</p>;
+  if (!profile) return <p className="text-gray-600">No profile found.</p>;
 
   return (
-    <Card className="max-w-lg">
+    <Card className="max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Edit Profile</CardTitle>
+        <CardTitle className="text-purple-700">Edit Profile</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" />
-        <Input name="specialty" value={form.specialty} onChange={handleChange} placeholder="Specialty" />
-        <Input name="licenseNumber" value={form.licenseNumber} onChange={handleChange} placeholder="License Number" />
-        <Input name="location" value={form.location} onChange={handleChange} placeholder="Location" />
         <Input
-          type="number"
-          name="yearsOfExperience"
-          value={form.yearsOfExperience}
-          onChange={handleChange}
+          value={profile.name || ""}
+          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+          placeholder="Name"
+        />
+        <Input
+          value={profile.specialty || ""}
+          onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
+          placeholder="Specialty"
+        />
+        <Input
+          value={profile.location || ""}
+          onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+          placeholder="Location"
+        />
+        <Input
+          value={profile.yearsOfExperience || ""}
+          onChange={(e) =>
+            setProfile({ ...profile, yearsOfExperience: e.target.value })
+          }
           placeholder="Years of Experience"
         />
         <Input
-          name="languagesSpoken"
-          value={form.languagesSpoken}
-          onChange={handleChange}
+          value={profile.languagesSpoken?.join(", ") || ""}
+          onChange={(e) =>
+            setProfile({
+              ...profile,
+              languagesSpoken: e.target.value.split(",").map((lang) => lang.trim()),
+            })
+          }
           placeholder="Languages (comma separated)"
         />
-        <Input name="bio" value={form.bio} onChange={handleChange} placeholder="Short Bio" />
-        <Input name="phone" value={form.contactInfo.phone} onChange={handleChange} placeholder="Phone" />
-        <Input name="email" value={form.contactInfo.email} onChange={handleChange} placeholder="Email" />
-        <Input name="address" value={form.contactInfo.address} onChange={handleChange} placeholder="Address" />
-        <Input name="profileImage" value={form.profileImage} onChange={handleChange} placeholder="Profile Image URL" />
 
-        <Button onClick={handleSave} disabled={saving} className="w-full">
-          {saving ? "Saving…" : "Save Changes"}
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-4 pt-4">
+          <Button
+            className="bg-purple-600 text-white"
+            onClick={handleSave}
+          >
+            Save Changes
+          </Button>
+          <Button
+            className="bg-gray-500 text-white"
+            onClick={() => navigate("/doctor")}
+          >
+            Back to Dashboard
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,12 +1,11 @@
-// DoctorAppointments.jsx
+// PatientAppointments.jsx
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { appointmentsAPI } from "@/api/appointmentAPI";
 import { toast } from "react-hot-toast";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-export function DoctorAppointments() {
+export function PatientAppointments() {
   const { getToken } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +14,8 @@ export function DoctorAppointments() {
     (async () => {
       try {
         const token = await getToken();
-        const res = await appointmentsAPI.listForDoctor(token);
+        const res = await appointmentsAPI.listForPatient(token);
+        console.log("Appointments API response:", res);
         setAppointments(Array.isArray(res.appointments) ? res.appointments : []);
       } catch (err) {
         toast.error("Could not load appointments");
@@ -25,53 +25,18 @@ export function DoctorAppointments() {
     })();
   }, [getToken]);
 
-  const handleConfirm = async (id) => {
-    try {
-      const token = await getToken();
-      const updated = await appointmentsAPI.confirm(id, token);
-      toast.success("Appointment confirmed");
-      setAppointments((prev) => prev.map((a) => (a._id === id ? updated : a)));
-    } catch {
-      toast.error("Failed to confirm appointment");
-    }
-  };
-
-  const handleCancel = async (id) => {
-    try {
-      const token = await getToken();
-      const updated = await appointmentsAPI.cancel(id, token);
-      toast.success("Appointment canceled");
-      setAppointments((prev) => prev.map((a) => (a._id === id ? updated : a)));
-    } catch {
-      toast.error("Failed to cancel appointment");
-    }
-  };
-
-  const handleAddNote = async (id) => {
-    const message = prompt("Enter note for patient:");
-    if (!message) return;
-    try {
-      const token = await getToken();
-      const updated = await appointmentsAPI.addNote(id, { message, authorType: "doctor" }, token);
-      toast.success("Note added");
-      setAppointments((prev) => prev.map((a) => (a._id === id ? updated : a)));
-    } catch {
-      toast.error("Failed to add note");
-    }
-  };
-
-  if (loading) return <p className="text-purple-600">Loading appointments…</p>;
+  if (loading) return <p className="text-purple-600">Loading your appointments…</p>;
 
   return (
     <div className="space-y-4">
       {appointments.length === 0 ? (
-        <p className="text-gray-600">No appointments yet.</p>
+        <p className="text-gray-600">You have no appointments yet.</p>
       ) : (
         appointments.map((appt) => (
           <Card key={appt._id}>
             <CardHeader>
               <CardTitle>
-                Appointment with {appt.patientId?.name || appt.patientName || "Unknown Patient"} —{" "}
+                Appointment with Dr. {appt.doctorId?.name || "Unknown"} —{" "}
                 {new Date(appt.date).toLocaleDateString()}{" "}
                 {new Date(appt.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </CardTitle>
@@ -79,7 +44,6 @@ export function DoctorAppointments() {
             <CardContent className="space-y-2">
               <p><strong>Reason:</strong> {appt.reason || "Not specified"}</p>
               <p><strong>Status:</strong> {appt.status}</p>
-
               <div className="mt-2">
                 <strong>Notes:</strong>
                 {appt.notes?.length ? (
@@ -99,22 +63,6 @@ export function DoctorAppointments() {
                 ) : (
                   <p className="text-gray-500">No notes yet</p>
                 )}
-              </div>
-
-              <div className="flex gap-2 mt-3">
-                {appt.status === "pending" && (
-                  <>
-                    <Button onClick={() => handleConfirm(appt._id)} className="bg-green-600 text-white">
-                      Confirm
-                    </Button>
-                    <Button onClick={() => handleCancel(appt._id)} className="bg-red-600 text-white">
-                      Cancel
-                    </Button>
-                  </>
-                )}
-                <Button onClick={() => handleAddNote(appt._id)} className="bg-purple-600 text-white">
-                  Add Note
-                </Button>
               </div>
             </CardContent>
           </Card>

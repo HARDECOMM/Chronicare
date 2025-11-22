@@ -10,12 +10,8 @@ export function DoctorPanelShell() {
   const idle = "text-purple-700 hover:bg-purple-50";
 
   const handleLogout = async () => {
-    try {
-      await signOut(); // ✅ End Clerk session
-      navigate("/", { replace: true }); // ✅ Redirect to landing page
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
+    await signOut();
+    navigate("/", { replace: true });
   };
 
   return (
@@ -31,24 +27,21 @@ export function DoctorPanelShell() {
             >
               Dashboard
             </NavLink>
+
             <NavLink
               to="/doctor/appointments"
               className={({ isActive }) => `${linkBase} ${isActive ? active : idle}`}
             >
               Appointments
             </NavLink>
-            <NavLink
-              to="/doctor/edit"
-              className={({ isActive }) => `${linkBase} ${isActive ? active : idle}`}
-            >
-              Edit Profile
-            </NavLink>
+
             <NavLink
               to="/doctor/view"
               className={({ isActive }) => `${linkBase} ${isActive ? active : idle}`}
             >
-              View Profile
+              Profile
             </NavLink>
+
             <button
               onClick={handleLogout}
               className="ml-4 px-4 py-2 rounded bg-red-500 text-white text-sm font-medium hover:bg-red-600"

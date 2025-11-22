@@ -1,12 +1,14 @@
-const { Patient } = require('../models/patient');
-const { User } = require('../models/user');
-const { Appointment } = require('../models/appointment');
+const Patient = require("../models/patient");
+const User = require("../models/user");
+const Appointment = require("../models/appointment"); // <-- ensure this model exists
 
-// Clerk sync: ensure logged-in Clerk user exists in DB
+/**
+ * Clerk sync: ensures a Clerk user exists in our DB
+ */
 exports.syncUser = async (req, res) => {
   const { clerkId, name, email } = req.body;
   if (!clerkId || !email) {
-    return res.status(400).json({ error: 'Missing clerkId or email' });
+    return res.status(400).json({ error: "Missing clerkId or email" });
   }
 
   try {
@@ -18,103 +20,169 @@ exports.syncUser = async (req, res) => {
         clerkId,
         name,
         email: normalizedEmail,
-        role: 'patient', // default role
+        role: "patient",
       });
     }
 
-    res.status(200).json(user);
+    return res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ error: 'Server error during user sync', details: err.message });
+    return res.status(500).json({
+      error: "Server error during user sync",
+      details: err.message,
+    });
   }
 };
 
-// Create patient profile (explicitly called once)
+/**
+ * Create patient profile (only if none exists yet)
+ */
 exports.createPatient = async (req, res) => {
   try {
-    const { userId: clerkId } = req.auth(); // ✅ updated
-    if (!clerkId) return res.status(401).json({ error: 'Unauthorized: missing clerk id' });
+    const clerkId = req.auth?.userId;
+    if (!clerkId) {
+      return res.status(401).json({ error: "Unauthorized: missing clerk id" });
+    }
 
     const user = await User.findOne({ clerkId });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     const existing = await Patient.findOne({ userId: user._id });
-    if (existing) return res.status(400).json({ error: 'Patient profile already exists' });
+    if (existing) {
+      return res.status(400).json({ error: "Patient profile already exists" });
+    }
 
     const patient = new Patient({
       userId: user._id,
-      ...req.body,
+      name: req.body.name,
+      age: req.body.age,
+      gender: req.body.gender,
+      contactInfo: {
+        phone: req.body.phone,
+        address: req.body.address,
+      },
+      medicalHistory: req.body.medicalHistory || [],
+      allergies: req.body.allergies || [],
+      emergencyContact: {
+        name: req.body.emergencyContactName,
+        phone: req.body.emergencyContactPhone,
+        relation: req.body.emergencyContactRelation,
+      },
     });
 
     await patient.save();
     return res.status(201).json(patient.toObject());
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create patient profile', details: err.message });
+    return res.status(500).json({
+      error: "Failed to create patient profile",
+      details: err.message,
+    });
   }
 };
 
-// Get logged-in patient profile
+/**
+ * Get logged-in patient profile
+ */
 exports.getPatientByClerkId = async (req, res) => {
   try {
-    const { userId: clerkId } = req.auth();
-    if (!clerkId) return res.status(401).json({ error: 'Unauthorized: missing clerk id' });
-
-    const user = await User.findOne({ clerkId });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const patient = await Patient.findOne({ userId: user._id });
-    if (!patient) {
-      return res.status(200).json(null); // return null instead of 404
+    const clerkId = req.auth?.userId;
+    if (!clerkId) {
+      return res.status(401).json({ error: "Unauthorized: missing clerk id" });
     }
 
-    return res.status(200).json(patient.toObject());
+    const user = await User.findOne({ clerkId });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const patient = await Patient.findOne({ userId: user._id });
+    return res.status(200).json(patient ? patient.toObject() : null);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch patient profile', details: err.message });
+    return res.status(500).json({
+      error: "Failed to fetch patient profile",
+      details: err.message,
+    });
   }
 };
 
-// Update or create patient profile
-// Update or create patient profile
+/**
+ * Update or create patient profile (upsert)
+ */
 exports.updatePatientProfile = async (req, res) => {
-  console.log("➡️ updatePatientProfile hit with body:", req.body);
   try {
-    const { userId: clerkId } = req.auth();
-    if (!clerkId) return res.status(401).json({ error: "Unauthorized: missing clerk id" });
+    const clerkId = req.auth?.userId;
+    if (!clerkId) {
+      return res.status(401).json({ error: "Unauthorized: missing clerk id" });
+    }
 
     const user = await User.findOne({ clerkId });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     const patient = await Patient.findOneAndUpdate(
       { userId: user._id },
-      { $set: { ...req.body, userId: user._id } }, // ✅ use $set to preserve other fields
+      {
+        $set: {
+          name: req.body.name,
+          age: req.body.age,
+          gender: req.body.gender,
+          contactInfo: {
+            phone: req.body.phone,
+            address: req.body.address,
+          },
+          medicalHistory: req.body.medicalHistory || [],
+          allergies: req.body.allergies || [],
+          emergencyContact: {
+            name: req.body.emergencyContactName,
+            phone: req.body.emergencyContactPhone,
+            relation: req.body.emergencyContactRelation,
+          },
+          userId: user._id,
+        },
+      },
       { new: true, upsert: true, runValidators: true }
     );
 
     return res.status(200).json(patient.toObject());
   } catch (err) {
-    res.status(500).json({ error: "Failed to update patient profile", details: err.message });
+    return res.status(500).json({
+      error: "Failed to update patient profile",
+      details: err.message,
+    });
   }
 };
 
-// Admin: list all patients
-exports.listAllPatients = async (req, res) => {
-  try {
-    const patients = await Patient.find().populate('userId').lean();
-    return res.status(200).json(patients);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error', details: err.message });
-  }
-};
-
-// Get appointments for logged-in patient
+/**
+ * Get appointments for logged-in patient
+ */
 exports.getAppointmentsForUser = async (req, res) => {
   try {
-    const { userId: clerkId } = req.auth(); // ✅ updated
-    const user = await User.findOne({ clerkId });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const clerkId = req.auth?.userId;
+    if (!clerkId) {
+      return res.status(401).json({ error: "Unauthorized: missing clerk id" });
+    }
 
-    const appointments = await Appointment.find({ userId: user._id }).populate('doctorId');
-    res.status(200).json(appointments);
+    const user = await User.findOne({ clerkId });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const patient = await Patient.findOne({ userId: user._id });
+    if (!patient) {
+      return res.status(404).json({ error: "Patient profile not found" });
+    }
+
+    const appointments = await Appointment.find({ patientId: patient._id })
+      .populate("doctorId", "name specialty")
+      .sort({ date: 1 });
+
+    return res.status(200).json({ appointments });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch appointments', details: err.message });
+    return res.status(500).json({
+      error: "Failed to fetch appointments",
+      details: err.message,
+    });
   }
 };

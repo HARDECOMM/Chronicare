@@ -1,24 +1,29 @@
-// src/models/Doctor.js
+// src/models/doctor.js
 const mongoose = require("mongoose");
 
-const DoctorSchema = new mongoose.Schema(
-  {
-    clerkId: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
-    specialty: { type: String },
-    licenseNumber: { type: String },
-    location: { type: String },
-    yearsOfExperience: { type: Number, default: 0 },
-    languagesSpoken: { type: [String], default: [] },
-    bio: { type: String },
-    contactInfo: {
-      phone: String,
-      email: String,
-      address: String,
-    },
-    profileImage: { type: String },
-  },
-  { timestamps: true }
-);
+const doctorSchema = new mongoose.Schema({
+  clerkId: { type: String, required: true, unique: true }, // Clerk user ID
 
-module.exports = mongoose.model("Doctor", DoctorSchema);
+  name: { type: String, required: true },
+  specialty: { type: String, required: true },
+  licenseNumber: { type: String }, // optional
+  location: { type: String },      // optional
+
+  yearsOfExperience: { type: Number, default: 0 },
+
+  languagesSpoken: [{ type: String }], // array of strings
+
+  bio: { type: String }, // optional short description
+
+  contactInfo: {
+    phone: { type: String },
+    email: { type: String },
+    address: { type: String },
+  },
+
+  profileImage: { type: String }, // URL string
+
+  createdAt: { type: Date, default: Date.now },
+});
+
+module.exports = mongoose.model("Doctor", doctorSchema);

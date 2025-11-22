@@ -17,15 +17,19 @@ import { DoctorDashboard } from "./pages/doctor/DoctorDashboard";
 import { DoctorProfileEditor } from "./pages/doctor/DoctorProfileEditor";
 import { DoctorAppointments } from "./pages/doctor/DoctorAppointments";
 import { DoctorProfileView } from "./pages/doctor/DoctorProfileView";
-import { DoctorCreate } from "./pages/doctor/DoctorCreate";
+import { DoctorCreate } from "./pages/doctor/doctorCreate";
 
 import { PatientPanelShell } from "./components/patient/PatientPanelShell";
-import { PatientDashboard } from "./pages/patient/PatientDashboard";
-import { PatientProfileEditor } from "./pages/patient/PatientProfileEditor";
-import { BookAppointment } from "./pages/patient/BookAppointments";
+import { PatientDashboard } from "./pages/patient/patientDashboard";
+import { PatientProfileEditor } from "./pages/patient/patientProfileEditor";
+import { PatientProfileView } from "./pages/patient/patientProfileView";   // ✅ new view
+import { PatientAppointments } from "./pages/patient/patientAppointment";
+import { BookAppointment } from "./pages/patient/bookAppointment";
+import { PatientCreate } from "./pages/patient/patientCreate";
 
 import { usersAPI } from "./api/usersAPI";
-import { doctorsAPI } from "./api/doctorsAPI";
+import { doctorsAPI } from "./api/doctorAPI";
+import { patientsAPI } from "./api/patientAPI";
 
 function RequireRole({ requiredRole, currentRole, children }) {
   if (currentRole === undefined) {
@@ -56,6 +60,7 @@ export function App() {
 
   const [role, setRole] = useState(undefined);
   const [hasDoctorProfile, setHasDoctorProfile] = useState(undefined);
+  const [hasPatientProfile, setHasPatientProfile] = useState(undefined);
 
   const initOnceRef = useRef(false);
   const navigate = useNavigate();
@@ -78,13 +83,17 @@ export function App() {
         if (fetchedRole === "doctor") {
           const docRes = await doctorsAPI.getMyProfile(token).catch(() => ({ profile: null }));
           setHasDoctorProfile(!!docRes?.profile);
-        } else {
-          setHasDoctorProfile(false);
+        }
+
+        if (fetchedRole === "patient") {
+          const patRes = await patientsAPI.getMyProfile(token).catch(() => ({ profile: null }));
+          setHasPatientProfile(!!patRes?.profile);
         }
       } catch (err) {
         console.error("Failed to initialize user role/profile:", err);
         setRole(null);
         setHasDoctorProfile(false);
+        setHasPatientProfile(false);
       }
     })();
   }, [isLoaded, user, getToken]);
@@ -93,7 +102,6 @@ export function App() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    // If no user, always go to landing
     if (!user) {
       if (location.pathname.startsWith("/doctor") || location.pathname.startsWith("/patient")) {
         navigate("/", { replace: true });
@@ -120,12 +128,14 @@ export function App() {
     }
 
     if (role === "patient") {
+      if (hasPatientProfile === undefined) return;
+      const target = hasPatientProfile ? "/patient" : "/patient/create";
       if (!location.pathname.startsWith("/patient")) {
-        navigate("/patient", { replace: true });
+        navigate(target, { replace: true });
       }
       return;
     }
-  }, [isLoaded, user, role, hasDoctorProfile, navigate, location.pathname]);
+  }, [isLoaded, user, role, hasDoctorProfile, hasPatientProfile, navigate, location.pathname]);
 
   if (!isLoaded) {
     return (
@@ -161,9 +171,25 @@ export function App() {
           }
         >
           <Route index element={<PatientDashboard />} />
-          <Route path="profile" element={<PatientProfileEditor />} />
-          <Route path="appointments" element={<BookAppointment />} />
+          <Route path="profile" element={<PatientProfileView />} />   {/* ✅ view */}
+          <Route path="edit" element={<PatientProfileEditor />} />    {/* ✅ editor */}
+          <Route path="appointments" element={<PatientAppointments />} />
+          <Route path="appointments/book" element={<BookAppointment />} />
         </Route>
+
+        {/* Patient profile creation */}
+        <Route
+          path="/patient/create"
+          element={
+            <RequireRole requiredRole="patient" currentRole={role}>
+              {!hasPatientProfile ? (
+                <PatientCreate setHasPatientProfile={setHasPatientProfile} />
+              ) : (
+                <PatientDashboard />
+              )}
+            </RequireRole>
+          }
+        />
 
         {/* Doctor routes */}
         <Route
@@ -199,21 +225,7 @@ export function App() {
           path="/sign-in"
           element={
             <div className="flex items-center justify-center min-h-screen bg-white">
-              <SignIn
-                appearance={{
-                  elements: {
-                    card: "shadow-lg border border-purple-200 rounded-lg",
-                    headerTitle: "text-purple-700 font-bold",
-                    headerSubtitle: "text-gray-600",
-                    socialButtonsBlockButton:
-                      "bg-purple-600 text-white hover:bg-purple-700",
-                    formButtonPrimary:
-                      "bg-purple-600 text-white hover:bg-purple-700",
-                    formFieldLabel: "text-purple-700 font-medium",
-                    footerActionLink: "text-purple-600 hover:underline",
-                  },
-                }}
-              />
+              <SignIn />
             </div>
           }
         />
@@ -221,21 +233,7 @@ export function App() {
           path="/sign-up"
           element={
             <div className="flex items-center justify-center min-h-screen bg-white">
-              <SignUp
-                appearance={{
-                  elements: {
-                    card: "shadow-lg border border-purple-200 rounded-lg",
-                    headerTitle: "text-purple-700 font-bold",
-                    headerSubtitle: "text-gray-600",
-                    socialButtonsBlockButton:
-                      "bg-purple-600 text-white hover:bg-purple-700",
-                    formButtonPrimary:
-                      "bg-purple-600 text-white hover:bg-purple-700",
-                    formFieldLabel: "text-purple-700 font-medium",
-                    footerActionLink: "text-purple-600 hover:underline",
-                  },
-                }}
-              />
+              <SignUp />
             </div>
           }
         />

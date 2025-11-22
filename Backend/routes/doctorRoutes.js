@@ -26,11 +26,7 @@ router.get("/appointments", clerkAuth, getAppointments); // GET /api/doctors/app
 // Doctor creation
 router.post("/", clerkAuth, createDoctor);            // POST /api/doctors
 
-// Admin access
+// Doctor listing (used by patients to select a doctor when booking)
 router.get("/all", clerkAuth, listAll);               // GET /api/doctors/all
 
-// Health check
-router.get("/ping", (req, res) => res.send("Doctor routes alive")); // GET /api/doctors/ping
-
 module.exports = router;
-console.log("✅ doctorRoutes loaded");

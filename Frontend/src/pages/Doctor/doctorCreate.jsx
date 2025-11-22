@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { doctorsAPI } from "../../api/doctorsAPI";
+import { doctorsAPI } from "@/api/doctorAPI";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -11,14 +11,13 @@ export function DoctorCreate({ setHasDoctorProfile }) {
   const { getToken } = useAuth();
   const navigate = useNavigate();
 
-  // ✅ Initialize all fields to avoid uncontrolled → controlled warnings
   const [form, setForm] = useState({
     name: "",
     specialty: "",
     licenseNumber: "",
     location: "",
     yearsOfExperience: 0,
-    languagesSpoken: "", // handled as comma-separated string in form
+    languagesSpoken: "",
     bio: "",
     contactInfo: {
       phone: "",
@@ -32,8 +31,6 @@ export function DoctorCreate({ setHasDoctorProfile }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Handle nested contactInfo separately
     if (["phone", "email", "address"].includes(name)) {
       setForm({
         ...form,
@@ -50,7 +47,6 @@ export function DoctorCreate({ setHasDoctorProfile }) {
     try {
       const token = await getToken();
 
-      // Convert languagesSpoken string → array
       const payload = {
         ...form,
         languagesSpoken: form.languagesSpoken
@@ -64,16 +60,15 @@ export function DoctorCreate({ setHasDoctorProfile }) {
 
       toast.success("Doctor profile created successfully!");
 
-      setTimeout(() => {
-        navigate("/doctor/dashboard", { replace: true });
-      }, 500);
+      // ✅ Redirect to doctor dashboard (index route)
+      navigate("/doctor", { replace: true });
     } catch (err) {
       console.error("❌ Failed to create doctor profile:", err);
 
       if (err.message.includes("already exists")) {
         toast.error("Profile already exists. Redirecting to dashboard.");
         if (setHasDoctorProfile) setHasDoctorProfile(true);
-        navigate("/doctor/dashboard", { replace: true });
+        navigate("/doctor", { replace: true });
       } else {
         toast.error("Failed to create profile");
       }
