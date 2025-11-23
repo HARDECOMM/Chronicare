@@ -30,6 +30,7 @@ export const httpClient = {
     });
     return handle(res, "GET", path);
   },
+
   post: async (path, body, token) => {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "POST",
@@ -41,6 +42,7 @@ export const httpClient = {
     });
     return handle(res, "POST", path);
   },
+
   patch: async (path, body, token) => {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "PATCH",
@@ -51,5 +53,16 @@ export const httpClient = {
       body: JSON.stringify(body),
     });
     return handle(res, "PATCH", path);
+  },
+
+  delete: async (path, token) => {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    return handle(res, "DELETE", path);
   },
 };

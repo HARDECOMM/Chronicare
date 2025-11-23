@@ -62,7 +62,7 @@ export function PatientDashboard() {
       {/* Profile Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-purple-700">Profile</CardTitle>
+          <CardTitle className="text-purple-700">Profile Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {profile?.profileImage && (

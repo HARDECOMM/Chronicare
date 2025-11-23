@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { usersAPI } from "../../api/usersAPI";
+import { usersAPI } from "../../api/userAPI";
 import { toast } from "react-hot-toast";
 import { Button } from "@/components/ui/doctor/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/doctor/card";

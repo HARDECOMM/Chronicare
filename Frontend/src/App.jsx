@@ -27,7 +27,7 @@ import { PatientAppointments } from "./pages/patient/patientAppointment";
 import { BookAppointment } from "./pages/patient/bookAppointment";
 import { PatientCreate } from "./pages/patient/patientCreate";
 
-import { usersAPI } from "./api/usersAPI";
+import { usersAPI } from "./api/userAPI";
 import { doctorsAPI } from "./api/doctorAPI";
 import { patientsAPI } from "./api/patientAPI";
 

@@ -1,5 +1,6 @@
+// BookAppointment.jsx
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react"; // ✅ import useUser
 import { doctorsAPI } from "@/api/doctorAPI";
 import { appointmentsAPI } from "@/api/appointmentAPI";
 import { toast } from "react-hot-toast";
@@ -11,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 export function BookAppointment() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
+  const { user } = useUser(); // ✅ Clerk user info
   const [doctors, setDoctors] = useState([]);
   const [form, setForm] = useState({
     doctorId: "",
@@ -18,6 +20,7 @@ export function BookAppointment() {
     time: "",
     recurrencePattern: "none",
     recurrenceCount: 1,
+    reason: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +50,8 @@ export function BookAppointment() {
           doctorId: form.doctorId,
           date: form.date,
           time: form.time,
+          reason: form.reason,
+          patientName: user?.fullName || "", // ✅ auto-fill patient name
           isRecurring: form.recurrencePattern !== "none",
           recurrencePattern: form.recurrencePattern,
           recurrenceCount: Number(form.recurrenceCount),
@@ -61,6 +66,7 @@ export function BookAppointment() {
         time: "",
         recurrencePattern: "none",
         recurrenceCount: 1,
+        reason: "",
       });
     } catch (err) {
       toast.error("Failed to book appointment");
@@ -81,7 +87,7 @@ export function BookAppointment() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Doctor Dropdown */}
             <div className="flex flex-col">
-              <label className="font-medium mb-1">Select Doctor</label>
+              <label className="font-semibold text-black mb-1">Select Doctor</label>
               <select
                 name="doctorId"
                 value={form.doctorId}
@@ -114,26 +120,44 @@ export function BookAppointment() {
             )}
 
             {/* Date */}
-            <Input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              required
-            />
+            <div className="flex flex-col">
+              <label className="font-semibold text-black mb-1">Date</label>
+              <Input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                required
+              />
+            </div>
 
             {/* Time */}
-            <Input
-              type="time"
-              name="time"
-              value={form.time}
-              onChange={handleChange}
-              required
-            />
+            <div className="flex flex-col">
+              <label className="font-semibold text-black mb-1">Time</label>
+              <Input
+                type="time"
+                name="time"
+                value={form.time}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* Reason (optional) */}
+            <div className="flex flex-col">
+              <label className="font-semibold text-black mb-1">Reason (optional)</label>
+              <Input
+                name="reason"
+                value={form.reason}
+                onChange={handleChange}
+                placeholder="Reason for appointment"
+                className="border rounded p-2"
+              />
+            </div>
 
             {/* Recurrence Pattern */}
             <div className="flex flex-col">
-              <label className="font-medium mb-1">Repeat</label>
+              <label className="font-semibold text-black mb-1">Repeat</label>
               <select
                 name="recurrencePattern"
                 value={form.recurrencePattern}
@@ -149,13 +173,22 @@ export function BookAppointment() {
 
             {/* Recurrence Count */}
             {form.recurrencePattern !== "none" && (
-              <Input
-                type="number"
-                name="recurrenceCount"
-                value={form.recurrenceCount}
-                onChange={handleChange}
-                min="1"
-              />
+              <div className="flex flex-col">
+                <label className="font-semibold text-black mb-1">
+                  Number of Times to Repeat
+                </label>
+                <Input
+                  type="number"
+                  name="recurrenceCount"
+                  value={form.recurrenceCount}
+                  onChange={handleChange}
+                  min="1"
+                  className="border rounded p-2"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Example: Enter 3 to book this appointment {form.recurrencePattern}, for 3 consecutive times.
+                </p>
+              </div>
             )}
 
             {/* Purple-themed Button */}

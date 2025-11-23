@@ -31,7 +31,7 @@ exports.create = async (req, res) => {
       patientId: patientId || null, // ✅ optional MongoDB ref
       patientClerkId: clerkId,
       patientName: patientName || "",
-      reason: reason || "",
+      reason: reason || "Not specified",
       date: startDate,
       status: "pending",
       isRecurring: !!isRecurring,
@@ -76,10 +76,8 @@ exports.listForPatient = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth();
 
-    const now = new Date();
     const appts = await Appointment.find({
-      patientClerkId: clerkId,      // ✅ use Clerk ID
-      date: { $gte: now },
+      patientClerkId: clerkId,
       status: { $ne: "canceled" },
     })
       .populate("doctorId", "name specialty")
@@ -99,13 +97,11 @@ exports.listForDoctor = async (req, res) => {
     const doctor = await Doctor.findOne({ clerkId });
     if (!doctor) return res.status(404).json({ error: "Doctor profile not found" });
 
-    const now = new Date();
     const appts = await Appointment.find({
       doctorId: doctor._id,
-      date: { $gte: now },
       status: { $ne: "canceled" },
     })
-      .populate("patientId", "name") // ✅ works only if patientId is set in create
+      .populate("patientId", "name")
       .sort({ date: 1 });
 
     res.json({ appointments: appts });
@@ -183,3 +179,50 @@ exports.addNote = async (req, res) => {
     res.status(500).json({ error: "Failed to add note" });
   }
 };
+
+// Update note (doctor or patient)
+exports.updateNote = async (req, res) => {
+  try {
+    const { userId: clerkId } = req.auth();
+    const { appointmentId, noteId } = req.params;
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "message is required" });
+    }
+
+    const appt = await Appointment.findOneAndUpdate(
+      { _id: appointmentId, "notes._id": noteId },
+      { $set: { "notes.$.message": message, "notes.$.updatedAt": new Date() } },
+      { new: true }
+    );
+
+    if (!appt) return res.status(404).json({ error: "Appointment or note not found" });
+    res.json(appt);
+  } catch (err) {
+    console.error("❌ Error updating note:", err);
+    res.status(500).json({ error: "Failed to update note" });
+  }
+};
+
+// Delete note (doctor or patient)
+const mongoose = require("mongoose");
+
+exports.deleteNote = async (req, res) => {
+  try {
+    const { appointmentId, noteId } = req.params;
+
+    const appt = await Appointment.findOneAndUpdate(
+      { _id: appointmentId },
+      { $pull: { notes: { _id: new mongoose.Types.ObjectId(noteId) } } }, // ✅ cast to ObjectId
+      { new: true }
+    );
+
+    if (!appt) return res.status(404).json({ error: "Appointment or note not found" });
+    res.json(appt);
+  } catch (err) {
+    console.error("❌ Error deleting note:", err);
+    res.status(500).json({ error: "Failed to delete note" });
+  }
+};
+

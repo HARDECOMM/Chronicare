@@ -1,3 +1,4 @@
+// src/controllers/patientController.js
 const Patient = require("../models/patient");
 const User = require("../models/user");
 const Appointment = require("../models/appointment"); // <-- ensure this model exists
@@ -38,7 +39,7 @@ exports.syncUser = async (req, res) => {
  */
 exports.createPatient = async (req, res) => {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = req.auth()?.userId; // ✅ use function call
     if (!clerkId) {
       return res.status(401).json({ error: "Unauthorized: missing clerk id" });
     }
@@ -48,26 +49,28 @@ exports.createPatient = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const existing = await Patient.findOne({ userId: user._id });
+    // ✅ check by clerkId
+    const existing = await Patient.findOne({ clerkId });
     if (existing) {
       return res.status(400).json({ error: "Patient profile already exists" });
     }
 
     const patient = new Patient({
-      userId: user._id,
+      clerkId,
       name: req.body.name,
       age: req.body.age,
+      dateOfBirth: req.body.dateOfBirth || null,
       gender: req.body.gender,
       contactInfo: {
-        phone: req.body.phone,
-        address: req.body.address,
+        phone: req.body.contactInfo?.phone,
+        address: req.body.contactInfo?.address,
       },
       medicalHistory: req.body.medicalHistory || [],
       allergies: req.body.allergies || [],
       emergencyContact: {
-        name: req.body.emergencyContactName,
-        phone: req.body.emergencyContactPhone,
-        relation: req.body.emergencyContactRelation,
+        name: req.body.emergencyContact?.name,
+        phone: req.body.emergencyContact?.phone,
+        relation: req.body.emergencyContact?.relation,
       },
     });
 
@@ -86,7 +89,7 @@ exports.createPatient = async (req, res) => {
  */
 exports.getPatientByClerkId = async (req, res) => {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = req.auth()?.userId;
     if (!clerkId) {
       return res.status(401).json({ error: "Unauthorized: missing clerk id" });
     }
@@ -96,7 +99,8 @@ exports.getPatientByClerkId = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const patient = await Patient.findOne({ userId: user._id });
+    // ✅ query by clerkId
+    const patient = await Patient.findOne({ clerkId });
     return res.status(200).json(patient ? patient.toObject() : null);
   } catch (err) {
     return res.status(500).json({
@@ -111,42 +115,43 @@ exports.getPatientByClerkId = async (req, res) => {
  */
 exports.updatePatientProfile = async (req, res) => {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = req.auth()?.userId;
     if (!clerkId) {
       return res.status(401).json({ error: "Unauthorized: missing clerk id" });
     }
 
-    const user = await User.findOne({ clerkId });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
     const patient = await Patient.findOneAndUpdate(
-      { userId: user._id },
+      { clerkId },
       {
         $set: {
           name: req.body.name,
           age: req.body.age,
+          dateOfBirth: req.body.dateOfBirth || null,
           gender: req.body.gender,
           contactInfo: {
-            phone: req.body.phone,
-            address: req.body.address,
+            phone: req.body.contactInfo?.phone,
+            address: req.body.contactInfo?.address,
           },
           medicalHistory: req.body.medicalHistory || [],
           allergies: req.body.allergies || [],
           emergencyContact: {
-            name: req.body.emergencyContactName,
-            phone: req.body.emergencyContactPhone,
-            relation: req.body.emergencyContactRelation,
+            name: req.body.emergencyContact?.name,
+            phone: req.body.emergencyContact?.phone,
+            relation: req.body.emergencyContact?.relation,
           },
-          userId: user._id,
+          clerkId,
         },
       },
       { new: true, upsert: true, runValidators: true }
     );
 
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
     return res.status(200).json(patient.toObject());
   } catch (err) {
+    console.error("Update error:", err);
     return res.status(500).json({
       error: "Failed to update patient profile",
       details: err.message,
@@ -159,7 +164,7 @@ exports.updatePatientProfile = async (req, res) => {
  */
 exports.getAppointmentsForUser = async (req, res) => {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = req.auth()?.userId;
     if (!clerkId) {
       return res.status(401).json({ error: "Unauthorized: missing clerk id" });
     }
@@ -169,7 +174,7 @@ exports.getAppointmentsForUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const patient = await Patient.findOne({ userId: user._id });
+    const patient = await Patient.findOne({ clerkId });
     if (!patient) {
       return res.status(404).json({ error: "Patient profile not found" });
     }

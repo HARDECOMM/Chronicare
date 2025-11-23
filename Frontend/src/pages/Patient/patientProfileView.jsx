@@ -15,8 +15,9 @@ export function PatientProfileView() {
     const fetchProfile = async () => {
       try {
         const token = await getToken();
-        const data = await patientsAPI.getMyProfile(token);
-        setProfile(data);
+        const response = await patientsAPI.getMyProfile(token);
+        console.log("Fetched profile:", response);
+        setProfile(response?.data || response); // ✅ handle both cases
       } catch (err) {
         toast.error("Failed to load profile");
       } finally {
@@ -25,6 +26,7 @@ export function PatientProfileView() {
     };
     fetchProfile();
   }, [getToken]);
+
 
   if (loading) return <p className="text-purple-600">Loading profile…</p>;
 
@@ -49,7 +51,7 @@ export function PatientProfileView() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Patient Profile</CardTitle>
+        <CardTitle className="text-purple-600 font-bold sentence case tracking-wide"> Clinical Profile</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         <p><strong>Name:</strong> {profile.name}</p>

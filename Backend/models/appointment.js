@@ -1,4 +1,3 @@
-// src/models/appointment.js
 const mongoose = require("mongoose");
 
 const noteSchema = new mongoose.Schema({
@@ -6,6 +5,7 @@ const noteSchema = new mongoose.Schema({
   authorId: { type: String, required: true }, // Clerk userId
   message: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date }, // ✅ track edits
 });
 
 const appointmentSchema = new mongoose.Schema({
@@ -16,7 +16,7 @@ const appointmentSchema = new mongoose.Schema({
   patientClerkId: { type: String, required: true }, // Clerk ID for auth
   patientName: { type: String }, // snapshot for quick display
 
-  reason: { type: String },
+  reason: { type: String, default: "Not specified" },
 
   date: { type: Date, required: true },
   status: { type: String, enum: ["pending", "confirmed", "canceled"], default: "pending" },
@@ -26,7 +26,7 @@ const appointmentSchema = new mongoose.Schema({
   recurrencePattern: { type: String, enum: ["none", "daily", "weekly", "monthly"], default: "none" },
   recurrenceCount: { type: Number, default: 1 },
 
-  notes: [noteSchema],
+  notes: [noteSchema], // ✅ embedded notes array
 
   createdAt: { type: Date, default: Date.now },
 });
