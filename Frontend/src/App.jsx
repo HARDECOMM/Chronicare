@@ -12,17 +12,17 @@ import {
 import { SelectRole } from "./components/roleBase/SelectRole";
 import { Landing } from "./components/roleBase/Landing";
 
-import { DoctorPanelShell } from "./components/doctor/DoctorPanelShell";
-import { DoctorDashboard } from "./pages/doctor/DoctorDashboard";
-import { DoctorProfileEditor } from "./pages/doctor/DoctorProfileEditor";
-import { DoctorAppointments } from "./pages/doctor/DoctorAppointments";
-import { DoctorProfileView } from "./pages/doctor/DoctorProfileView";
+import { DoctorPanelShell } from "./components/doctor/doctorPanelShell";
+import { DoctorDashboard } from "./pages/doctor/doctorDashboard";
+import { DoctorProfileEditor } from "./pages/doctor/doctorProfileEditor";
+import { DoctorAppointments } from "./pages/doctor/doctorAppointments";
+import { DoctorProfileView } from "./pages/doctor/doctorProfileView";
 import { DoctorCreate } from "./pages/doctor/doctorCreate";
 
-import { PatientPanelShell } from "./components/patient/PatientPanelShell";
+import { PatientPanelShell } from "./components/patient/patientPanelShell";
 import { PatientDashboard } from "./pages/patient/patientDashboard";
 import { PatientProfileEditor } from "./pages/patient/patientProfileEditor";
-import { PatientProfileView } from "./pages/patient/patientProfileView";   // ✅ new view
+import { PatientProfileView } from "./pages/patient/patientProfileView"; 
 import { PatientAppointments } from "./pages/patient/patientAppointment";
 import { BookAppointment } from "./pages/patient/bookAppointment";
 import { PatientCreate } from "./pages/patient/patientCreate";
