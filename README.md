@@ -1,120 +1,16 @@
-# Chronicare - Doctor Side Documentation (End-to-End)
+# React + Vite
 
-**Capstone Project for PLP ACADEMY**
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-This document covers the Doctor side functionalities in the Chronicare application, built with the MERN stack. It outlines the core components, user flows, and API integrations to support doctor authentication, profile management, navigation, and appointment handling. Further updates will expand other roles and features.
+Currently, two official plugins are available:
 
----
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## 1. Authentication & Role Management
+## React Compiler
 
-- **Authentication** is handled by Clerk, supporting SignIn, SignUp, and user session management via UserButton.
-- After login, the app uses `usersAPI.getRole` to determine if the user is a doctor or patient.
-- **Redirect logic** (in `App.jsx`) governs navigation based on role and profile existence:
-  - No role → redirects to `/select-role`
-  - Doctor with profile → `/doctor`
-  - Doctor without profile → `/doctor/create`
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
----
+## Expanding the ESLint configuration
 
-## 2. Doctor Panel Shell (`DoctorPanelShell.jsx`)
-
-- Provides page layout and navigation for doctor-specific routes:
-  - Dashboard
-  - Appointments
-  - Edit Profile
-  - View Profile
-  - Logout
-- Logout calls Clerk’s `signOut()` and redirects to the landing (`/`) page.
-- No internal redirect logic in the shell itself to avoid UI flickering.
-
----
-
-## 3. Doctor Routes (defined in `App.jsx`)
-
-| Route                | Description                   |
-|----------------------|-------------------------------|
-| `/doctor`            | DoctorDashboard               |
-| `/doctor/appointments`| DoctorAppointments            |
-| `/doctor/edit`       | DoctorProfileEditor           |
-| `/doctor/view`       | DoctorProfileView             |
-| `/doctor/create`     | DoctorCreate (if no profile)  |
-
----
-
-## 4. Doctor Profile Management
-
-### DoctorProfileEditor.jsx
-- Loads existing profile via `doctorsAPI.getMyProfile()`.
-- Editable fields include:
-  - Name, specialty, license number, location
-  - Years of experience
-  - Languages spoken
-  - Bio
-  - Contact info (phone, email, address)
-  - Profile image
-- Save updates via `doctorsAPI.updateMyProfile(payload)`.
-- Shows success toast and redirects to `/doctor/view`.
-
-### DoctorProfileView.jsx
-- Displays doctor’s profile details in read-only mode for verification.
-
-### DoctorCreate.jsx
-- Used for initial profile creation by doctors without an existing profile.
-- After saving, sets `hasDoctorProfile = true` and redirects to the dashboard.
-
----
-
-## 5. Doctor Dashboard (`DoctorDashboard.jsx`)
-
-- Provides an overview including quick stats:
-  - Number of appointments
-  - Number of patients
-  - Links to profile and appointments
-
----
-
-## 6. Doctor Appointments (`DoctorAppointments.jsx`)
-
-- Shows a list of patient-booked appointments, each with:
-  - Patient name
-  - Date/time
-  - Reason/symptoms
-  - Status (pending, confirmed, completed)
-- Allows doctor to:
-  - Accept or reject appointments
-  - Add notes for patient communication
-  - Mark appointments as completed
-
----
-
-## 7. Doctor API Layer (`doctorsAPI.js`)
-
-Handles backend calls with token-based authentication:
-- `getMyProfile(token)`
-- `updateMyProfile(payload, token)`
-- `getAppointments(token)`
-- `updateAppointmentStatus(id, status, token)`
-- `addAppointmentNotes(id, notes, token)`
-
----
-
-## 8. User Experience Flow (Doctor Side)
-
-1. Doctor signs in → role checked → redirects to `/doctor`.
-2. If no profile, redirected to `/doctor/create`.
-3. Doctor fills profile → saved → redirected to dashboard.
-4. Doctor navigates:
-   - Dashboard: overview of stats
-   - Appointments: manage bookings
-   - Edit Profile: update info
-   - View Profile: confirm details
-5. Doctor logs out → redirected to landing page.
-
----
-
-This documentation captures the full flow and structure for the Doctor side of Chronicare as it currently stands. Further updates will address additional features and other user roles.
-
----
-
-*Developed as a capstone project for PLP ACADEMY using MERN stack technologies.*
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

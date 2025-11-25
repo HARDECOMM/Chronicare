@@ -88,37 +88,49 @@ export function PatientCreate({ setHasPatientProfile }) {
           <CardTitle className="text-purple-700">Create Your Patient Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              required
-            />
-            <Input
-              type="number"
-              name="age"
-              value={form.age}
-              onChange={handleChange}
-              placeholder="Age"
-              required
-            />
-            <Input
-              type="date"
-              name="dateOfBirth"
-              value={form.dateOfBirth}
-              onChange={handleChange}
-              placeholder="Date of Birth"
-            />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information */}
+            <div>
+              <label className="block font-medium mb-1">Full Name</label>
+              <Input
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="e.g. Haruna Adegoke Ademoye"
+                required
+              />
+            </div>
 
-            <div className="flex flex-col">
-              <label className="font-medium mb-1">Gender</label>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block font-medium mb-1">Age</label>
+                <Input
+                  type="number"
+                  name="age"
+                  value={form.age}
+                  onChange={handleChange}
+                  placeholder="e.g. 32"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block font-medium mb-1">Date of Birth</label>
+                <Input
+                  type="date"
+                  name="dateOfBirth"
+                  value={form.dateOfBirth}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Gender</label>
               <select
                 name="gender"
                 value={form.gender}
                 onChange={handleChange}
-                className="border rounded p-2"
+                className="border rounded p-2 w-full"
                 required
               >
                 <option value="">Select Gender</option>
@@ -130,58 +142,75 @@ export function PatientCreate({ setHasPatientProfile }) {
               </select>
             </div>
 
-            <Input
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-              required
-            />
-            <Input
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="Home Address"
-            />
+            {/* Contact Information */}
+            <div>
+              <label className="block font-medium mb-1">Phone Number</label>
+              <Input
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="e.g. 08074904427"
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Home Address</label>
+              <Input
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                placeholder="e.g. 13, Shipeolu Street, Onipanu, Shomolu"
+              />
+            </div>
 
-            {/* ✅ Simplified Medical History */}
-            <Input
-              name="medicalHistory"
-              value={form.medicalHistory}
-              onChange={handleChange}
-              placeholder="Medical History (e.g., None, Diabetes)"
-            />
+            {/* Medical Information */}
+            <div>
+              <label className="block font-medium mb-1">Primary Chronic Condition(s)</label>
+              <Input
+                name="medicalHistory"
+                value={form.medicalHistory}
+                onChange={handleChange}
+                placeholder="e.g. Diabetes, Hypertension, None"
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Allergies</label>
+              <Input
+                name="allergies"
+                value={form.allergies}
+                onChange={handleChange}
+                placeholder="e.g. Penicillin, Peanuts, None"
+              />
+            </div>
 
-            {/* ✅ Simplified Allergies */}
-            <Input
-              name="allergies"
-              value={form.allergies}
-              onChange={handleChange}
-              placeholder="Allergies (e.g., Dust, Peanuts)"
-            />
-
-            <Input
-              name="emergencyContactName"
-              value={form.emergencyContactName}
-              onChange={handleChange}
-              placeholder="Emergency Contact Name"
-              required
-            />
-            <Input
-              name="emergencyContactPhone"
-              value={form.emergencyContactPhone}
-              onChange={handleChange}
-              placeholder="Emergency Contact Phone"
-              required
-            />
-
-            <div className="flex flex-col">
-              <label className="font-medium mb-1">Emergency Contact Relation</label>
+            {/* Emergency Contact */}
+            <div>
+              <label className="block font-medium mb-1">Emergency Contact Name</label>
+              <Input
+                name="emergencyContactName"
+                value={form.emergencyContactName}
+                onChange={handleChange}
+                placeholder="e.g. Olalekan Ademoye"
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Emergency Contact Phone</label>
+              <Input
+                name="emergencyContactPhone"
+                value={form.emergencyContactPhone}
+                onChange={handleChange}
+                placeholder="e.g. 08077779620"
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Emergency Contact Relation</label>
               <select
                 name="emergencyContactRelation"
                 value={form.emergencyContactRelation}
                 onChange={handleChange}
-                className="border rounded p-2"
+                className="border rounded p-2 w-full"
                 required
               >
                 <option value="">Select Relation</option>
@@ -193,13 +222,21 @@ export function PatientCreate({ setHasPatientProfile }) {
               </select>
             </div>
 
-            {/* ✅ Purple Create Profile Button */}
+            {/* Action Buttons */}
             <Button
               type="submit"
               disabled={loading}
               className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
             >
-              {loading ? "Creating profile..." : "Create Profile"}
+              {loading ? "Creating profile..." : "Save Profile"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => navigate("/patient")}
+            >
+              Back to Dashboard
             </Button>
           </form>
         </CardContent>

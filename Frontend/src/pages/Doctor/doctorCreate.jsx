@@ -59,8 +59,6 @@ export function DoctorCreate({ setHasDoctorProfile }) {
       if (setHasDoctorProfile) setHasDoctorProfile(true);
 
       toast.success("Doctor profile created successfully!");
-
-      // ✅ Redirect to doctor dashboard (index route)
       navigate("/doctor", { replace: true });
     } catch (err) {
       console.error("❌ Failed to create doctor profile:", err);
@@ -84,32 +82,138 @@ export function DoctorCreate({ setHasDoctorProfile }) {
           <CardTitle className="text-purple-700">Create Your Doctor Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" required />
-            <Input name="specialty" value={form.specialty} onChange={handleChange} placeholder="Specialty" required />
-            <Input name="licenseNumber" value={form.licenseNumber} onChange={handleChange} placeholder="License Number" />
-            <Input name="location" value={form.location} onChange={handleChange} placeholder="Location" />
-            <Input
-              type="number"
-              name="yearsOfExperience"
-              value={form.yearsOfExperience}
-              onChange={handleChange}
-              placeholder="Years of Experience"
-            />
-            <Input
-              name="languagesSpoken"
-              value={form.languagesSpoken}
-              onChange={handleChange}
-              placeholder="Languages (comma separated)"
-            />
-            <Input name="bio" value={form.bio} onChange={handleChange} placeholder="Short Bio" />
-            <Input name="phone" value={form.contactInfo.phone} onChange={handleChange} placeholder="Phone" />
-            <Input name="email" value={form.contactInfo.email} onChange={handleChange} placeholder="Email" />
-            <Input name="address" value={form.contactInfo.address} onChange={handleChange} placeholder="Address" />
-            <Input name="profileImage" value={form.profileImage} onChange={handleChange} placeholder="Profile Image URL" />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information */}
+            <div>
+              <label className="block font-medium mb-1">Full Name</label>
+              <Input
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="e.g. Dr. John Doe"
+                required
+              />
+            </div>
 
-            <Button type="submit" disabled={loading} className="w-full mt-4">
-              {loading ? "Creating profile..." : "Create Profile"}
+            <div>
+              <label className="block font-medium mb-1">Specialty</label>
+              <Input
+                name="specialty"
+                value={form.specialty}
+                onChange={handleChange}
+                placeholder="e.g. Cardiology, Pediatrics"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">License Number</label>
+              <Input
+                name="licenseNumber"
+                value={form.licenseNumber}
+                onChange={handleChange}
+                placeholder="e.g. MDCN-12345"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Location</label>
+              <Input
+                name="location"
+                value={form.location}
+                onChange={handleChange}
+                placeholder="e.g. Lagos University Teaching Hospital"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Years of Experience</label>
+              <Input
+                type="number"
+                name="yearsOfExperience"
+                value={form.yearsOfExperience}
+                onChange={handleChange}
+                placeholder="e.g. 10"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Languages Spoken</label>
+              <Input
+                name="languagesSpoken"
+                value={form.languagesSpoken}
+                onChange={handleChange}
+                placeholder="e.g. English, Yoruba, French"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Short Bio</label>
+              <Input
+                name="bio"
+                value={form.bio}
+                onChange={handleChange}
+                placeholder="Brief introduction about yourself"
+              />
+            </div>
+
+            {/* Contact Information */}
+            <div>
+              <label className="block font-medium mb-1">Phone Number</label>
+              <Input
+                name="phone"
+                value={form.contactInfo.phone}
+                onChange={handleChange}
+                placeholder="e.g. 08012345678"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Email Address</label>
+              <Input
+                name="email"
+                value={form.contactInfo.email}
+                onChange={handleChange}
+                placeholder="e.g. doctor@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Clinic Address</label>
+              <Input
+                name="address"
+                value={form.contactInfo.address}
+                onChange={handleChange}
+                placeholder="e.g. 15, Broad Street, Lagos"
+              />
+            </div>
+
+            {/* Profile Image */}
+            <div>
+              <label className="block font-medium mb-1">Profile Image URL</label>
+              <Input
+                name="profileImage"
+                value={form.profileImage}
+                onChange={handleChange}
+                placeholder="Paste image link here"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {loading ? "Creating profile..." : "Save Profile"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => navigate("/doctor")}
+            >
+              Back to Dashboard
             </Button>
           </form>
         </CardContent>

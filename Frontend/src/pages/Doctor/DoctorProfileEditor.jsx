@@ -51,41 +51,62 @@ export function DoctorProfileEditor() {
   return (
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-purple-700">Edit Profile</CardTitle>
+        <CardTitle className="text-purple-700">Edit Your Doctor Profile</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Input
-          value={profile.name || ""}
-          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-          placeholder="Name"
-        />
-        <Input
-          value={profile.specialty || ""}
-          onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
-          placeholder="Specialty"
-        />
-        <Input
-          value={profile.location || ""}
-          onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-          placeholder="Location"
-        />
-        <Input
-          value={profile.yearsOfExperience || ""}
-          onChange={(e) =>
-            setProfile({ ...profile, yearsOfExperience: e.target.value })
-          }
-          placeholder="Years of Experience"
-        />
-        <Input
-          value={profile.languagesSpoken?.join(", ") || ""}
-          onChange={(e) =>
-            setProfile({
-              ...profile,
-              languagesSpoken: e.target.value.split(",").map((lang) => lang.trim()),
-            })
-          }
-          placeholder="Languages (comma separated)"
-        />
+      <CardContent className="space-y-6">
+        {/* Personal Information */}
+        <div>
+          <label className="block font-medium mb-1">Full Name</label>
+          <Input
+            value={profile.name || ""}
+            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+            placeholder="e.g. Dr. John Doe"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1">Specialty</label>
+          <Input
+            value={profile.specialty || ""}
+            onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
+            placeholder="e.g. Cardiology, Pediatrics"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1">Location</label>
+          <Input
+            value={profile.location || ""}
+            onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+            placeholder="e.g. Lagos University Teaching Hospital"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1">Years of Experience</label>
+          <Input
+            type="number"
+            value={profile.yearsOfExperience || ""}
+            onChange={(e) =>
+              setProfile({ ...profile, yearsOfExperience: e.target.value })
+            }
+            placeholder="e.g. 10"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1">Languages Spoken</label>
+          <Input
+            value={profile.languagesSpoken?.join(", ") || ""}
+            onChange={(e) =>
+              setProfile({
+                ...profile,
+                languagesSpoken: e.target.value.split(",").map((lang) => lang.trim()),
+              })
+            }
+            placeholder="e.g. English, Yoruba, French"
+          />
+        </div>
 
         {/* Action Buttons */}
         <div className="flex gap-4 pt-4">
@@ -96,7 +117,7 @@ export function DoctorProfileEditor() {
             Save Changes
           </Button>
           <Button
-            className="bg-gray-500 text-white"
+            variant="outline"
             onClick={() => navigate("/doctor")}
           >
             Back to Dashboard

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { appointmentsAPI } from "@/api/appointmentAPI";
 import { toast } from "react-hot-toast";
@@ -71,6 +72,21 @@ export function PatientAppointments() {
       setAppointments((prev) => prev.map((a) => (a._id === appointmentId ? updated : a)));
     } catch {
       toast.error("Failed to delete note");
+    }
+  };
+
+  // ✅ Cancel appointment (patient side)
+  const handleCancel = async (id) => {
+    if (!confirm("Are you sure you want to cancel this appointment?")) return;
+    try {
+      const token = await getToken();
+      const updated = await appointmentsAPI.cancelByPatient(id, token); // 👈 use patient route
+      console.log("Cancel response:", updated);
+      toast.success("Appointment canceled");
+      setAppointments((prev) => prev.map((a) => (a._id === id ? updated : a)));
+    } catch (err) {
+      console.error("Cancel failed:", err);
+      toast.error("Failed to cancel appointment");
     }
   };
 
@@ -207,6 +223,26 @@ export function PatientAppointments() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* ✅ Cancel appointment button for patients */}
+              <div className="flex gap-4 mt-3">
+                {(appt.status === "pending" || appt.status === "confirmed") && (
+                  <Button
+                    onClick={() => handleCancel(appt._id)}
+                    className="bg-red-600 text-white"
+                  >
+                    Cancel Appointment
+                  </Button>
+                )}
+
+                {/* ✅ Reuse the same NavLink as in your shell */}
+                <NavLink
+                  to="/patient/appointments/book"
+                  className="px-4 py-2 rounded text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition"
+                >
+                  Book Appointment
+                </NavLink>
               </div>
             </CardContent>
           </Card>

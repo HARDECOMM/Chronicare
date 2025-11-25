@@ -114,15 +114,51 @@ export function PatientProfileEditor() {
           <CardTitle className="text-purple-700">Edit Your Patient Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input name="name" value={form.name} onChange={handleChange} placeholder="Full Name" required />
-            <Input type="number" name="age" value={form.age} onChange={handleChange} placeholder="Age" required />
-            <Input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} placeholder="Date of Birth" />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information */}
+            <div>
+              <label className="block font-medium mb-1">Full Name</label>
+              <Input
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="e.g. Haruna Adegoke Ademoye"
+                required
+              />
+            </div>
 
-            {/* Gender Dropdown */}
-            <div className="flex flex-col">
-              <label className="font-medium mb-1">Gender</label>
-              <select name="gender" value={form.gender} onChange={handleChange} className="border rounded p-2" required>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block font-medium mb-1">Age</label>
+                <Input
+                  type="number"
+                  name="age"
+                  value={form.age}
+                  onChange={handleChange}
+                  placeholder="e.g. 32"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block font-medium mb-1">Date of Birth</label>
+                <Input
+                  type="date"
+                  name="dateOfBirth"
+                  value={form.dateOfBirth}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Gender</label>
+              <select
+                name="gender"
+                value={form.gender}
+                onChange={handleChange}
+                className="border rounded p-2 w-full"
+                required
+              >
                 <option value="">Select Gender</option>
                 {genderOptions.map((g) => (
                   <option key={g} value={g}>{g}</option>
@@ -130,10 +166,28 @@ export function PatientProfileEditor() {
               </select>
             </div>
 
-            <Input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone Number" required />
-            <Input name="address" value={form.address} onChange={handleChange} placeholder="Home Address" />
+            {/* Contact Information */}
+            <div>
+              <label className="block font-medium mb-1">Phone Number</label>
+              <Input
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="e.g. 08074904427"
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Home Address</label>
+              <Input
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                placeholder="e.g. 13, Shipeolu Street, Onipanu, Shomolu"
+              />
+            </div>
 
-            {/* Chronic Conditions Multi-Select Chips */}
+            {/* Chronic Conditions Multi-Select */}
             <div>
               <label className="block font-medium mb-1">Primary Chronic Condition(s)</label>
               <div className="flex flex-wrap gap-2">
@@ -142,9 +196,8 @@ export function PatientProfileEditor() {
                     type="button"
                     key={c}
                     onClick={() => handleMultiSelect("medicalHistory", c)}
-                    className={`px-3 py-1 rounded-full border ${
-                      form.medicalHistory.includes(c) ? "bg-purple-600 text-white" : "bg-gray-100"
-                    }`}
+                    className={`px-3 py-1 rounded-full border ${form.medicalHistory.includes(c) ? "bg-purple-600 text-white" : "bg-gray-100"
+                      }`}
                   >
                     {c}
                   </button>
@@ -152,7 +205,7 @@ export function PatientProfileEditor() {
               </div>
             </div>
 
-            {/* Allergies Multi-Select Chips */}
+            {/* Allergies Multi-Select */}
             <div>
               <label className="block font-medium mb-1">Allergies</label>
               <div className="flex flex-wrap gap-2">
@@ -161,9 +214,8 @@ export function PatientProfileEditor() {
                     type="button"
                     key={a}
                     onClick={() => handleMultiSelect("allergies", a)}
-                    className={`px-3 py-1 rounded-full border ${
-                      form.allergies.includes(a) ? "bg-red-600 text-white" : "bg-gray-100"
-                    }`}
+                    className={`px-3 py-1 rounded-full border ${form.allergies.includes(a) ? "bg-red-600 text-white" : "bg-gray-100"
+                      }`}
                   >
                     {a}
                   </button>
@@ -172,13 +224,35 @@ export function PatientProfileEditor() {
             </div>
 
             {/* Emergency Contact */}
-            <Input name="emergencyContactName" value={form.emergencyContactName} onChange={handleChange} placeholder="Emergency Contact Name" required />
-            <Input name="emergencyContactPhone" value={form.emergencyContactPhone} onChange={handleChange} placeholder="Emergency Contact Phone" required />
-
-            {/* Relation Dropdown */}
-            <div className="flex flex-col">
-              <label className="font-medium mb-1">Emergency Contact Relation</label>
-              <select name="emergencyContactRelation" value={form.emergencyContactRelation} onChange={handleChange} className="border rounded p-2" required>
+            <div>
+              <label className="block font-medium mb-1">Emergency Contact Name</label>
+              <Input
+                name="emergencyContactName"
+                value={form.emergencyContactName}
+                onChange={handleChange}
+                placeholder="e.g. Olalekan Ademoye"
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Emergency Contact Phone</label>
+              <Input
+                name="emergencyContactPhone"
+                value={form.emergencyContactPhone}
+                onChange={handleChange}
+                placeholder="e.g. 08077779620"
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Emergency Contact Relation</label>
+              <select
+                name="emergencyContactRelation"
+                value={form.emergencyContactRelation}
+                onChange={handleChange}
+                className="border rounded p-2 w-full"
+                required
+              >
                 <option value="">Select Relation</option>
                 {emergencyRelations.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -188,12 +262,16 @@ export function PatientProfileEditor() {
 
             {/* Action Buttons */}
             <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={loading} className="bg-purple-600 text-white">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-purple-600 text-white hover:bg-purple-700"
+              >
                 {loading ? "Updating profile..." : "Save Changes"}
               </Button>
               <Button
                 type="button"
-                className="bg-gray-500 text-white"
+                variant="outline"
                 onClick={() => navigate("/patient")}
               >
                 Back to Dashboard

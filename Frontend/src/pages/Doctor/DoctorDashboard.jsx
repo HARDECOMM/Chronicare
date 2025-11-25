@@ -182,13 +182,13 @@ export function DoctorDashboard() {
         </CardHeader>
         <CardContent className="flex gap-4">
           <Button
-            className="bg-blue-600 text-white"
+            className="bg-purple-600 text-white"
             onClick={() => navigate("/doctor/view")}
           >
             Profile
           </Button>
           <Button
-            className="bg-purple-600 text-white"
+            className="bg-green-600 text-white"
             onClick={() => navigate("/doctor/appointments")}
           >
             Manage Appointments

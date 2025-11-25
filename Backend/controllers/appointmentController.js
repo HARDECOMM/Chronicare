@@ -1,8 +1,12 @@
-const Patient = require("../models/patient");   // ✅ import Patient model
-const Appointment = require("../models/appointment");
-const Doctor = require("../models/doctor");
+// ✅ Imports
+const mongoose = require("mongoose");
+const Patient = require("../models/patient");       // Patient model
+const Appointment = require("../models/appointment"); // Appointment model
+const Doctor = require("../models/doctor");         // Doctor model
 
-// Patient books appointment
+// ===============================
+// 📌 Patient books appointment
+// ===============================
 exports.create = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth(); // ✅ Clerk patient ID
@@ -12,7 +16,7 @@ exports.create = async (req, res) => {
       time,
       reason,
       patientName,
-      patientId, // ✅ allow passing patientId if you want to populate later
+      patientId, // optional MongoDB ref
       isRecurring,
       recurrencePattern,
       recurrenceCount,
@@ -28,7 +32,7 @@ exports.create = async (req, res) => {
     // First appointment
     const firstAppt = await Appointment.create({
       doctorId,
-      patientId: patientId || null, // ✅ optional MongoDB ref
+      patientId: patientId || null,
       patientClerkId: clerkId,
       patientName: patientName || "",
       reason: reason || "Not specified",
@@ -40,7 +44,7 @@ exports.create = async (req, res) => {
     });
     appointments.push(firstAppt);
 
-    // Handle repetition
+    // Handle recurring appointments
     if (isRecurring && recurrencePattern !== "none" && recurrenceCount > 1) {
       let currentDate = new Date(startDate);
       for (let i = 1; i < recurrenceCount; i++) {
@@ -64,14 +68,16 @@ exports.create = async (req, res) => {
       }
     }
 
-    res.status(201).json(appointments); // ✅ return array directly
+    res.status(201).json(appointments);
   } catch (err) {
     console.error("❌ Error creating appointment:", err);
     res.status(500).json({ error: "Failed to create appointment" });
   }
 };
 
-// Patient lists own appointments
+// ===============================
+// 📌 Patient lists own appointments
+// ===============================
 exports.listForPatient = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth();
@@ -90,7 +96,9 @@ exports.listForPatient = async (req, res) => {
   }
 };
 
-// Doctor lists own appointments
+// ===============================
+// 📌 Doctor lists own appointments
+// ===============================
 exports.listForDoctor = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth();
@@ -111,7 +119,9 @@ exports.listForDoctor = async (req, res) => {
   }
 };
 
-// Doctor confirms appointment
+// ===============================
+// 📌 Doctor confirms appointment
+// ===============================
 exports.confirm = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth();
@@ -132,8 +142,10 @@ exports.confirm = async (req, res) => {
   }
 };
 
-// Doctor cancels appointment
-exports.cancel = async (req, res) => {
+// ===============================
+// 📌 Doctor cancels appointment
+// ===============================
+exports.cancelByDoctor = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth();
     const doctor = await Doctor.findOne({ clerkId });
@@ -148,12 +160,37 @@ exports.cancel = async (req, res) => {
     if (!appt) return res.status(404).json({ error: "Appointment not found" });
     res.json(appt);
   } catch (err) {
-    console.error("❌ Error canceling appointment:", err);
+    console.error("❌ Error canceling appointment by doctor:", err);
     res.status(500).json({ error: "Failed to cancel appointment" });
   }
 };
 
-// Add note (doctor or patient)
+// ===============================
+// 📌 Patient cancels appointment
+// ===============================
+exports.cancelByPatient = async (req, res) => {
+  try {
+    const { userId: clerkId } = req.auth();
+    const patient = await Patient.findOne({ clerkId });
+    if (!patient) return res.status(404).json({ error: "Patient profile not found" });
+
+    const { id } = req.params;
+    const appt = await Appointment.findOneAndUpdate(
+      { _id: id, patientClerkId: clerkId },
+      { $set: { status: "canceled" } },
+      { new: true }
+    );
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+    res.json(appt);
+  } catch (err) {
+    console.error("❌ Error canceling appointment by patient:", err);
+    res.status(500).json({ error: "Failed to cancel appointment" });
+  }
+};
+
+// ===============================
+// 📌 Add note (doctor or patient)
+// ===============================
 exports.addNote = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth();
@@ -180,7 +217,9 @@ exports.addNote = async (req, res) => {
   }
 };
 
-// Update note (doctor or patient)
+// ===============================
+// 📌 Update note (doctor or patient)
+// ===============================
 exports.updateNote = async (req, res) => {
   try {
     const { userId: clerkId } = req.auth();
@@ -205,9 +244,9 @@ exports.updateNote = async (req, res) => {
   }
 };
 
-// Delete note (doctor or patient)
-const mongoose = require("mongoose");
-
+// ===============================
+// 📌 Delete note (doctor or patient)
+// ===============================
 exports.deleteNote = async (req, res) => {
   try {
     const { appointmentId, noteId } = req.params;
@@ -218,11 +257,13 @@ exports.deleteNote = async (req, res) => {
       { new: true }
     );
 
-    if (!appt) return res.status(404).json({ error: "Appointment or note not found" });
+    if (!appt) {
+      return res.status(404).json({ error: "Appointment or note not found" });
+    }
+
     res.json(appt);
   } catch (err) {
     console.error("❌ Error deleting note:", err);
     res.status(500).json({ error: "Failed to delete note" });
   }
 };
-

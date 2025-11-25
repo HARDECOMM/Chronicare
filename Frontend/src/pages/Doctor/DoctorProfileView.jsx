@@ -89,7 +89,7 @@ export function DoctorProfileView() {
             Edit Profile
           </Button>
           <Button
-            className="bg-blue-600 text-white"
+            className="bg-green-600 text-white"
             onClick={() => navigate("/doctor/appointments")}
           >
             Manage Appointments
