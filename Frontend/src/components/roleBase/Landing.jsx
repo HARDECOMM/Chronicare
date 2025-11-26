@@ -25,7 +25,7 @@ export function Landing({ isLoaded, user, role }) {
       <Card className="max-w-md w-full">
         <CardHeader>
           <CardTitle className="text-purple-700">
-            {user ? "Redirecting..." : "Welcome to Doctor Portal"}
+            {user ? "Redirecting..." : "Welcome to chronicare"}
           </CardTitle>
         </CardHeader>
         <CardContent>
