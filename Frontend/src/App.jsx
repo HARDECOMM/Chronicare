@@ -13,7 +13,7 @@ import { SelectRole } from "./components/roleBase/SelectRole";
 import { Landing } from "./components/roleBase/Landing";
 
 import { DoctorPanelShell } from "./components/doctor/doctorPanelShell";
-import { DoctorDashboard } from "./pages/doctor/doctorDashboard";
+import { DoctorDashboard } from "./pages/doctor/DoctorDashboard";
 import { DoctorProfileEditor } from "./pages/doctor/doctorProfileEditor";
 import { DoctorAppointments } from "./pages/doctor/doctorAppointments";
 import { DoctorProfileView } from "./pages/doctor/doctorProfileView";
