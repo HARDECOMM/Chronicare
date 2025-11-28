@@ -5,6 +5,8 @@
 A full-stack MERN application for managing doctor-patient appointments with role-based authentication, profile management, and real-time appointment handling.
 
 ---
+live in vercel::::**https://chronicare.vercel.app/**
+---
 
 ## 📋 Table of Contents
 
