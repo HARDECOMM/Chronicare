@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getRedirectUrlForRole } from "./redirectRole";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/doctor/card";
-import { Button } from "@/components/ui/doctor/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export function Landing({ isLoaded, user, role }) {
   const navigate = useNavigate();

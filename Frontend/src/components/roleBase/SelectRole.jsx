@@ -3,8 +3,8 @@ import { useUser, useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { usersAPI } from "../../api/usersAPI";
 import { toast } from "react-hot-toast";
-import { Button } from "@/components/ui/doctor/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/doctor/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const roles = [

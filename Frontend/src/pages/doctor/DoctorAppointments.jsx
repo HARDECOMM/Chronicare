@@ -44,13 +44,18 @@ export function DoctorAppointments() {
   const handleCancel = async (id) => {
     try {
       const token = await getToken();
-      const updated = await appointmentsAPI.cancel(id, token);
+      // ✅ Use the doctor-specific cancel endpoint
+      const updated = await appointmentsAPI.cancelByDoctor(id, token);
       toast.success("Appointment canceled");
-      setAppointments((prev) => prev.map((a) => (a._id === id ? updated : a)));
-    } catch {
+      setAppointments((prev) =>
+        prev.map((a) => (a._id === id ? updated : a))
+      );
+    } catch (err) {
+      console.error("Cancel error:", err.response?.data || err.message);
       toast.error("Failed to cancel appointment");
     }
   };
+
 
   // ✅ Add new note
   const handleAddNote = async (id) => {

@@ -85,7 +85,7 @@ export function PatientAppointments() {
       toast.success("Appointment canceled");
       setAppointments((prev) => prev.map((a) => (a._id === id ? updated : a)));
     } catch (err) {
-      console.error("Cancel failed:", err);
+      console.error("Cancel failed:", err.response?.data || err.message);
       toast.error("Failed to cancel appointment");
     }
   };
