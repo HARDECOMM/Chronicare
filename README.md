@@ -1,11 +1,11 @@
-### 🏥 Chronicare - Healthcare Management Platform
+## 🏥 Chronicare - Healthcare Management Platform
 
 **Capstone Project for PLP ACADEMY**
 
-A full-stack MERN application for managing doctor-patient appointments with role-based authentication, profile management, and real-time appointment handling.
+- A full-stack MERN application for managing doctor-patient appointments with role-based authentication, profile management, and real-time appointment handling.
 
 ---
-live in vercel::::**https://chronicare.vercel.app/**
+::::[click to view the app in vercel](https://chronicare.vercel.app/)
 ---
 
 ## 📋 Table of Contents
@@ -19,11 +19,11 @@ live in vercel::::**https://chronicare.vercel.app/**
 7. [Authentication & Role Management](#authentication--role-management)
 8. [API Documentation](#api-documentation)
 9. [Doctor Panel Documentation](#doctor-panel-documentation)
-10. [User Flows & Diagrams](#user-flows--diagrams)
-11. [How to Run](#how-to-run)
-12. [Key Features](#key-features)
-13. [Troubleshooting](#troubleshooting)
-
+10. [Poctor Panel Documentation](#patient-panel-documentation)
+11. [User Flows & Diagrams](#user-flows--diagrams)
+12. [How to Run](#how-to-run)
+13. [Key Features](#key-features)
+14. [Troubleshooting](#troubleshooting)
 ---
 
 ## <u>Project Overview</u>
@@ -118,7 +118,7 @@ chronicare/
 
 ### Step 1: Clone and Navigate
 ```bash
-cd c:\Users\ademo\web-dev-project
+[clone the git repo](https://github.com/HARDECOMM/Chronicare.git)
 ```
 
 ### Step 2: Backend Setup
@@ -132,7 +132,6 @@ npm install
 cd ../Frontend
 npm install
 ```
-
 ---
 
 ## <u>Environment Configuration</u>
