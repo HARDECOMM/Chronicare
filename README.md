@@ -1,4 +1,4 @@
-# 🏥 Chronicare - Healthcare Management Platform
+### 🏥 Chronicare - Healthcare Management Platform
 
 **Capstone Project for PLP ACADEMY**
 
